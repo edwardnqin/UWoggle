@@ -1,24 +1,21 @@
-# Specification Document
-
-Please fill out this document to reflect your team's project. This is a living document and will need to be updated regularly. You may also remove any section to its own document (e.g. a separate standards and conventions document), however you must keep the header and provide a link to that other document under the header.
-
-Also, be sure to check out the Wiki for information on how to maintain your team's requirements.
-
 ## TeamName
 
-<!--The name of your team.-->
+The Bogglers
 
 ### Project Abstract
 
 <!--A one paragraph summary of what the software will do.-->
 
-This is an example paragraph written in markdown. You can use *italics*, **bold**, and other formatting options. You can also <u>use inline html</u> to format your text. The example sections included in this document are not necessarily all the sections you will want, and it is possible that you won't use all the one's provided. It is your responsibility to create a document that adequately conveys all the information about your project specifications and requirements.
+A basic application of the game Boggle. Users will be able to participate in real-time games with other users. There will be an algorithm to randomly shuffle the letter dice and lay them out; an interface for entering your words; a scoring feature displaying everyone's wordlists and highlighting unique entries; etc.
 
-Please view this file's source to see `<!--comments-->` with guidance on how you might use the different sections of this document. 
+Additional features may include customizable game settings, user accounts, tracking user stats, playing against a computer, and the ability to design custom boards for others to play, choosing different alphabets, incorporating a shared "definitive" dictionary, etc.
 
 ### Customer
 
 <!--A brief description of the customer for this software, both in general (the population who might eventually use such a system) and specifically for this document (the customer(s) who informed this document). Every project will have a customer from the CS506 instructional staff. Requirements should not be derived simply from discussion among team members. Ideally your customer should not only talk to you about requirements but also be excited later in the semester to use the system.-->
+
+The customer is anyone who wants to have fun with this word finding game.
+Our main customer is someone from the CS506 instructional staff.
 
 ### Specification
 
@@ -30,72 +27,16 @@ Please view this file's source to see `<!--comments-->` with guidance on how you
 
 #### Technology Stack
 
-Here are some sample technology stacks that you can use for inspiration:
-
 ```mermaid
 flowchart RL
 subgraph Front End
-	A(Javascript: React)
-end
-	
-subgraph Back End
-	B(Python: Django with \nDjango Rest Framework)
-end
-	
-subgraph Database
-	C[(MySQL)]
+	A(JavaScipt: React)
 end
 
-A <-->|"REST API"| B
-B <-->|Django ORM| C
-```
-
-```mermaid
-flowchart RL
-subgraph Front End
-	A(Javascript: Vue)
-end
-	
-subgraph Back End
-	B(Python: Flask)
-end
-	
-subgraph Database
-	C[(MySQL)]
-end
-
-A <-->|"REST API"| B
-B <-->|SQLAlchemy| C
-```
-
-```mermaid
-flowchart RL
-subgraph Front End
-	A(Javascript: Vue)
-end
-	
-subgraph Back End
-	B(Javascript: Express)
-end
-	
-subgraph Database
-	C[(MySQL)]
-end
-
-A <-->|"REST API"| B
-B <--> C
-```
-
-```mermaid
-flowchart RL
-subgraph Front End
-	A(Static JS, CSS, HTML)
-end
-	
 subgraph Back End
 	B(Java: SpringBoot)
 end
-	
+
 subgraph Database
 	C[(MySQL)]
 end
@@ -103,26 +44,6 @@ end
 A <-->|HTTP| B
 B <--> C
 ```
-
-```mermaid
-flowchart RL
-subgraph Front End
-	A(Mobile App)
-end
-	
-subgraph Back End
-	B(Python: Django)
-end
-	
-subgraph Database
-	C[(MySQL)]
-end
-
-A <-->|REST API| B
-B <-->|Django ORM| C
-```
-
-
 
 #### Database
 
@@ -255,4 +176,5 @@ deactivate DjangoBackend
 ### Standards & Conventions
 
 <!--This is a link to a seperate coding conventions document / style guide-->
+
 [Style Guide & Conventions](STYLE.md)
