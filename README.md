@@ -1,6 +1,4 @@
-## TeamName
-
-The Bogglers
+## UWoggle
 
 ### Project Abstract
 
@@ -27,129 +25,51 @@ Our main customer is someone from the CS506 instructional staff.
 
 #### Technology Stack
 
-```mermaid
-flowchart RL
-subgraph Front End
-	A(JavaScipt: React)
-end
-
-subgraph Back End
-	B(Java: SpringBoot)
-end
-
-subgraph Database
-	C[(MySQL)]
-end
-
-A <-->|HTTP| B
-B <--> C
-```
+![alt text](./techStack.jpeg)
 
 #### Database
 
 ```mermaid
 ---
-title: Sample Database ERD for an Order System
+title: User Database ERD
 ---
 erDiagram
-    Customer ||--o{ Order : "placed by"
-    Order ||--o{ OrderItem : "contains"
-    Product ||--o{ OrderItem : "included in"
-
-    Customer {
-        int customer_id PK
-        string name
+    User {
+        int user_id PK
+        string username
+        string password
         string email
-        string phone
+        int high_score
+        int number_of_games_played
     }
 
-    Order {
-        int order_id PK
-        int customer_id FK
-        string order_date
-        string status
-    }
-
-    Product {
-        int product_id PK
-        string name
-        string description
-        decimal price
-    }
-
-    OrderItem {
-        int order_item_id PK
-        int order_id FK
-        int product_id FK
-        int quantity
+    Friends {
+        int friendship_id PK
+        int user1_id FK
+        int user2_id FK
     }
 ```
 
 #### Class Diagram
 
-```mermaid
----
-title: Sample Class Diagram for Animal Program
----
-classDiagram
-    class Animal {
-        - String name
-        + Animal(String name)
-        + void setName(String name)
-        + String getName()
-        + void makeSound()
-    }
-    class Dog {
-        + Dog(String name)
-        + void makeSound()
-    }
-    class Cat {
-        + Cat(String name)
-        + void makeSound()
-    }
-    class Bird {
-        + Bird(String name)
-        + void makeSound()
-    }
-    Animal <|-- Dog
-    Animal <|-- Cat
-    Animal <|-- Bird
-```
-
 #### Flowchart
 
 ```mermaid
 ---
-title: Sample Program Flowchart
+title: Basic Game Selection Flowchart
 ---
-graph TD;
-    Start([Start]) --> Input_Data[/Input Data/];
-    Input_Data --> Process_Data[Process Data];
-    Process_Data --> Validate_Data{Validate Data};
-    Validate_Data -->|Valid| Process_Valid_Data[Process Valid Data];
-    Validate_Data -->|Invalid| Error_Message[/Error Message/];
-    Process_Valid_Data --> Analyze_Data[Analyze Data];
-    Analyze_Data --> Generate_Output[Generate Output];
-    Generate_Output --> Display_Output[/Display Output/];
-    Display_Output --> End([End]);
-    Error_Message --> End;
+flowchart TD
+    A[Start] -->B{Play}
+    B -->D[Singleplayer]
+    B -->E[Multiplayer]
+    B -->F[Player vs. Computer]
+    D --> G[End]
+    E --> G[End]
+    F --> G[End]
+    G --> B
 ```
 
 #### Behavior
-
-```mermaid
----
-title: Sample State Diagram For Coffee Application
----
-stateDiagram
-    [*] --> Ready
-    Ready --> Brewing : Start Brewing
-    Brewing --> Ready : Brew Complete
-    Brewing --> WaterLowError : Water Low
-    WaterLowError --> Ready : Refill Water
-    Brewing --> BeansLowError : Beans Low
-    BeansLowError --> Ready : Refill Beans
-```
 
 #### Sequence Diagram
 
@@ -159,12 +79,26 @@ sequenceDiagram
 participant ReactFrontend
 participant DjangoBackend
 participant MySQLDatabase
+participant JavaApp
+participant Dictionary
 
 ReactFrontend ->> DjangoBackend: HTTP Request (e.g., GET /api/data)
 activate DjangoBackend
 
 DjangoBackend ->> MySQLDatabase: Query (e.g., SELECT * FROM data_table)
 activate MySQLDatabase
+
+DjangoBackend ->> JavaApp:Game Request
+activate JavaApp
+
+JavaApp ->> Dictionary:Look Up
+activate Dictionary
+
+Dictionary ->> JavaApp:Validate
+deactivate Dictionary
+
+JavaApp ->> DjangoBackend:Return Game
+deactivate JavaApp
 
 MySQLDatabase -->> DjangoBackend: Result Set
 deactivate MySQLDatabase
