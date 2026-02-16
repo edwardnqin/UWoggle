@@ -1,4 +1,4 @@
-# Boggle Web App — Skeleton
+# UWoggle — Skeleton
 
 ## High-Level Architecture
 
