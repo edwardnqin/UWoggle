@@ -1,0 +1,52 @@
+ /* Modal */
+  .modalOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .modalCard{
+    width: min(520px, 96vw);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 30px 80px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  .modalHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+  .modalTitle{ font-weight: 1000; font-size: 18px; color: #111; }
+  .iconBtn{
+    border:none;
+    background: rgba(0,0,0,.06);
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    cursor:pointer;
+    font-weight: 900;
+  }
+  .modalBody{ padding: 16px; }
+
+  .field{ display:flex; flex-direction:column; gap: 6px; margin-bottom: 12px; }
+  label{ font-size: 13px; font-weight: 900; color: rgba(0,0,0,.75); }
+  input{
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 12px;
+    padding: 12px 12px;
+    font-size: 15px;
+    outline:none;
+  }
+  input:focus{
+    border-color: rgba(216,34,42,.55);
+    box-shadow: 0 0 0 4px rgba(216,34,42,.18);
+  }
+
+  .modalActions{ display:flex; gap: 10px; justify-content:flex-end; margin-top: 10px; }
+
