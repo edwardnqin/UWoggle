@@ -50,7 +50,7 @@ export default function App() {
       <Modal title="Login" open={loginOpen} onClose={() => setLoginOpen(false)}>
         <div className="field">
           <label htmlFor="login-username">Username / Email</label>
-          <input id="login-username" placeholder="milos@wisc.edu" autoComplete="username" />
+          <input id="login-username" placeholder="team25@wisc.edu" autoComplete="username" />
         </div>
         <div className="field">
           <label htmlFor="login-password">Password</label>
