@@ -1,0 +1,190 @@
+
+
+  /* ---------- Futuristic "HUD" Button (red/white version) ---------- */
+  .btn{
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    transform: translateY(0px);
+    transition: transform .12s ease, filter .12s ease;
+  }
+
+  /* Outer frame (beveled border like your example) */
+  .btn:before{
+    content:"";
+    position:absolute;
+    inset: -5px;
+    border-radius: 16px;
+    clip-path: polygon(
+      0% 30%,
+      8% 0%,
+      92% 0%,
+      100% 30%,
+      100% 70%,
+      92% 100%,
+      8% 100%,
+      0% 70%
+    );
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,.06)),
+      linear-gradient(180deg, var(--uw-red), var(--uw-red3));
+    box-shadow: var(--shadow);
+    z-index: 0;
+  }
+
+  /* Sweeping shine like the sample button */
+  .btn:after{
+    content:"";
+    position:absolute;
+    inset: -5px;
+    border-radius: 16px;
+    clip-path: polygon(
+      0% 30%,
+      8% 0%,
+      92% 0%,
+      100% 30%,
+      100% 70%,
+      92% 100%,
+      8% 100%,
+      0% 70%
+    );
+    background: linear-gradient(120deg,
+      transparent 0%,
+      rgba(255,255,255,.35) 25%,
+      transparent 45%
+    );
+    transform: translateX(-55%);
+    opacity: .0;
+    transition: transform .35s ease, opacity .18s ease;
+    z-index: 1;
+    pointer-events:none;
+  }
+
+  .btn:hover{
+    transform: translateY(-2px);
+    filter: brightness(1.02);
+  }
+
+  .btn:hover:before{
+    box-shadow: var(--shadowHover), 0 0 18px var(--glow), 0 0 22px var(--glowRed);
+  }
+
+  .btn:hover:after{
+    opacity: .9;
+    transform: translateX(55%);
+  }
+
+  .btn:active{
+    transform: translateY(1px);
+  }
+
+  .btnInner{
+    font-style: italic;
+    font-weight: 900;
+
+    -webkit-text-stroke: 0.6px currentColor;
+
+    text-shadow:
+      0.7px 0   0 currentColor,
+     -0.7px 0   0 currentColor,
+      0   0.7px 0 currentColor,
+      0  -0.7px 0 currentColor,
+      0   3px   10px rgba(0,0,0,.18);
+
+    position: relative;
+    z-index: 2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+
+    padding: 18px 22px;
+    min-height: 64px;
+
+    color: var(--uw-red);
+    font-weight: 1000;
+    letter-spacing: .6px;
+
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,245,245,.92));
+    border: 2px solid rgba(255,255,255,.65);
+
+    clip-path: polygon(
+      0% 30%,
+      8% 0%,
+      92% 0%,
+      100% 30%,
+      100% 70%,
+      92% 100%,
+      8% 100%,
+      0% 70%
+    );
+
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.85),
+      inset 0 -12px 22px rgba(0,0,0,.06);
+    text-transform: uppercase;
+  }
+
+  .btn:focus{
+    outline: 3px solid rgba(255,255,255,.55);
+    outline-offset: 4px;
+  }
+
+  /* Variants */
+  .btn--mini .btnInner{
+    padding: 10px 16px;
+    min-height: 44px;
+    font-size: 16px;
+    letter-spacing: .3px;
+  }
+
+  .btn--miniGhost:before{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06)),
+      linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
+  }
+  .btn--miniGhost .btnInner{
+    background: rgba(255,255,255,.16);
+    color: rgba(255,255,255,.96);
+    border: 2px solid rgba(255,255,255,.40);
+    text-transform:none;
+  }
+
+  /* Inverted Cancel button (better contrast) */
+  .btn--miniCancel:before{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.14)),
+      linear-gradient(180deg, rgba(255,255,255,.95), rgba(245,245,245,.82));
+  }
+  .btn--miniCancel .btnInner{
+    background: linear-gradient(180deg, var(--uw-red), var(--uw-red3));
+    color: rgba(255,255,255,.96);
+    border: 2px solid rgba(255,255,255,.45);
+    text-transform:none;
+    letter-spacing: .2px;
+    -webkit-text-stroke: 0px transparent;
+    text-shadow: 0 3px 10px rgba(0,0,0,.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.25),
+      inset 0 -12px 22px rgba(0,0,0,.18);
+  }
+
+  .actionsRow .btnInner{
+    width: 100%;
+    font-size: clamp(18px, 2.1vw, 30px);
+  }
+
+  .playBtn .btnInner{
+    min-height: 72px;
+    padding: 20px 26px;
+    font-size: clamp(20px, 2.4vw, 34px);
+  }
+
+  @media (max-width: 760px){
+    .actionsRow{ grid-template-columns: 1fr; }
+    .brandBlock{ margin-top: -14px; }
+  }
+

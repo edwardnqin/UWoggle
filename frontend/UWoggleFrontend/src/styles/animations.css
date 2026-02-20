@@ -1,0 +1,47 @@
+/* ---------- Entrance animations (Home) ---------- */
+@keyframes fadeFromLeft {
+  from { opacity: 0; transform: translateX(-26px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateX(0);     filter: blur(0); }
+}
+@keyframes fadeFromRight {
+  from { opacity: 0; transform: translateX(26px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateX(0);    filter: blur(0); }
+}
+@keyframes fadeFromTop {
+  from { opacity: 0; transform: translateY(-22px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateY(0);     filter: blur(0); }
+}
+@keyframes fadeFromBottom {
+  from { opacity: 0; transform: translateY(22px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+.animLeft,
+.animRight,
+.animTop,
+.animBottom {
+  opacity: 0;
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(.2,.8,.2,1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animLeft   { animation-name: fadeFromLeft; }
+.animRight  { animation-name: fadeFromRight; }
+.animTop    { animation-name: fadeFromTop; }
+.animBottom { animation-name: fadeFromBottom; }
+
+.delay1 { animation-delay: 80ms; }
+.delay2 { animation-delay: 160ms; }
+.delay3 { animation-delay: 240ms; }
+.delay4 { animation-delay: 320ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animLeft, .animRight, .animTop, .animBottom {
+    opacity: 1;
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
