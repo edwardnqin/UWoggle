@@ -1,0 +1,17 @@
+# Core
+flask
+flask-sqlalchemy
+pymysql
+python-dotenv
+
+# Auth
+PyJWT
+bcrypt
+itsdangerous
+
+# Email
+sendgrid
+
+# Testing
+pytest
+httpx
