@@ -20,7 +20,9 @@ def create_app():
 
     # --- Register blueprints (routes) ---
     from routes.auth_routes import auth_bp
+    from routes.board_routes import board_bp
     app.register_blueprint(auth_bp)
+    app.register_blueprint(board_bp)
 
     # --- Create database tables if they don't exist ---
     with app.app_context():

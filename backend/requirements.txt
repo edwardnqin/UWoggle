@@ -1,5 +1,6 @@
 # Core
 flask
+requests
 flask-sqlalchemy
 pymysql
 python-dotenv
