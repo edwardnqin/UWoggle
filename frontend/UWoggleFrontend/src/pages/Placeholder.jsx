@@ -8,7 +8,6 @@ export default function Placeholder({ title, subtitle, onBack }) {
         <HudButton variant="miniGhost" onClick={onBack} ariaLabel="Go back">
           ← Back
         </HudButton>
-        <div />
       </div>
 
       <div className="centerStack">

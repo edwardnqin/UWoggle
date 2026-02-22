@@ -3,6 +3,7 @@ import "./App.css";
 
 import Home from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
+import Play from "./pages/Play";
 import Modal from "./components/ui/Modal";
 import HudButton from "./components/ui/HudButton";
 
@@ -37,6 +38,12 @@ export default function App() {
             onGo={setView}
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
+          />
+        ) : view === "play" ? (
+          <Play
+            onBack={() => setView("home")}
+            title={current.title}
+            subtitle={current.subtitle}
           />
         ) : (
           <Placeholder
