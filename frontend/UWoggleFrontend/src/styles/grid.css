@@ -1,0 +1,27 @@
+/* The following three styles are for the Grid */
+  td {
+    border-style: solid;
+    width: 100px;
+    height: 100px;
+    background-color: #E84D53;
+    border-radius: 10%;
+  }
+
+.circle {
+  width: 80%; /* Set equal width and height for the inner circle */
+  height: 80%;
+  margin: 0 auto;
+  background: #C51C24;
+  font-size: 65px;
+  border-radius: 50%; /* This makes the square element a circle */
+  color: white;
+}
+
+.grid-background {
+  background: #7E0D0D;
+}
+
+.circle:hover{
+    background: #FFC1C4;
+    color: black;
+}
