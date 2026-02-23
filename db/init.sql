@@ -19,3 +19,32 @@ CREATE TABLE email_verifications (
     expires_at DATETIME     NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE friends (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    requester_id INT NOT NULL,
+    addressee_id INT NOT NULL,
+
+    status ENUM('PENDING', 'ACCEPTED') NOT NULL DEFAULT 'PENDING',
+
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    responded_at DATETIME NULL,
+
+    -- this won't allow us to self friend ourself
+    CONSTRAINT chk_not_self_friend CHECK (requester_id <> addressee_id),
+
+    FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (addressee_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- allow only one row per pair no matter what direction
+ALTER TABLE friends
+    ADD COLUMN user_low  INT GENERATED ALWAYS AS (LEAST(requester_id, addressee_id)) STORED,
+    ADD COLUMN user_high INT GENERATED ALWAYS AS (GREATEST(requester_id, addressee_id)) STORED,
+    ADD UNIQUE KEY uq_friend_pair (user_low, user_high);
+
+-- for looking up
+CREATE INDEX idx_friends_requester ON friends (requester_id, status);
+CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
