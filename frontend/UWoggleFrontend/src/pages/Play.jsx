@@ -1,23 +1,47 @@
-import Grid from '../components/ui/Grid'
+import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import React from "react";
+import React, { useState } from "react";
 
 export default function Play({ title, subtitle, onBack }) {
+  const [foundWords, setFoundWords] = useState([]);
 
-    return (
-      <div className="screen">
-        <div className="topBar">
-          <HudButton variant="miniGhost" onClick={onBack} ariaLabel="Go back">
-            ← Back
-          </HudButton>
-        </div>
-  
-        <div className="centerStack">
-          <div className="pageTitle">{title}</div>
-          <div className="pageSubtitle">{subtitle}</div>
-  
-          <Grid />
+  const handleCommitWord = (word) => {
+    const w = word.toUpperCase().trim();
+    if (w.length < 3) return;
+    setFoundWords((prev) => (prev.includes(w) ? prev : [...prev, w]));
+  };
+
+  return (
+    <div className="screen">
+      <div className="topBar">
+        <HudButton variant="miniGhost" onClick={onBack} ariaLabel="Go back">
+          ← Back
+        </HudButton>
+      </div>
+
+      <div className="centerStack">
+        <div className="pageTitle">{title}</div>
+        <div className="pageSubtitle">{subtitle}</div>
+
+        <div className="playMain">
+          <div className="playBoard">
+            <Grid onCommitWord={handleCommitWord} />
+          </div>
+
+          <div className="hintCard foundWordsPanel">
+            <div className="hintTitle">Found Words</div>
+            {foundWords.length === 0 ? (
+              <div className="pageSubtitle">No words yet.</div>
+            ) : (
+              <ul className="hintList foundWordsList">
+                {foundWords.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
-    );
+    </div>
+  );
 }
