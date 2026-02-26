@@ -4,13 +4,16 @@ import WinsBadge from "../components/ui/WinsBadge";
 import PlayIcon from "../components/ui/PlayIcon";
 import logoPng from "../assets/UWoggle.png";
 
-export default function Home({ onGo, onLogin, onSignup }) {
+export default function Home({ onGo, onLogin, onSignup, onFeedback }) {
   return (
     <>
       <div className="topRow">
         <WinsBadge wins={0} className="animLeft delay1" />
 
         <div className="rightBtns animRight delay2">
+          <HudButton variant="mini" onClick={onFeedback} ariaLabel="Open feedback">
+            Feedback
+          </HudButton>
           <HudButton variant="mini" onClick={onLogin} ariaLabel="Open login">
             Login
           </HudButton>
