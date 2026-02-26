@@ -1,68 +1,287 @@
-export default function Grid() {
-    const grid = [["A", "B", "C", "D"], ["E", "F", "G", "H"], ["I", "J", "K", "L"], ["M", "N", "O", "P"]];
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import "../../styles/grid.css";
 
-    return (
-        <div className="grid-background">
-            <table>
-                <tbody>
-                    <tr>
-                        <td>
-                            <div className="circle">{grid[0][0]}</div>
-                        </td>
-                        <td>
-                            <div className="circle">{grid[0][1]}</div>
-                        </td>
-                        <td>
-                            <div className="circle">{grid[0][2]}</div>
-                        </td>
-                        <td>
-                            <div className="circle">{grid[0][3]}</div>
-                            </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div className="circle">{grid[1][0]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[1][1]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[1][2]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[1][3]}</div>
-                            </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div className="circle">{grid[2][0]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[2][1]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[2][2]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[2][3]}</div>
-                            </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div className="circle">{grid[3][0]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[3][1]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[3][2]}</div>
-                            </td>
-                        <td>
-                            <div className="circle">{grid[3][3]}</div>
-                            </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    );
+export default function Grid({ onCommitWord }) {
+  const grid = useMemo(
+    () => [
+      ["A", "B", "C", "D"],
+      ["E", "F", "G", "H"],
+      ["I", "J", "K", "L"],
+      ["M", "N", "O", "P"],
+    ],
+    []
+  );
+
+  // Wrap container (for outside-click detection + trail coordinate space)
+  const boardRef = useRef(null);
+
+  // Store element refs for measuring centers
+  const cellRefs = useRef(Array.from({ length: 4 }, () => Array(4).fill(null)));
+
+  // Canonical path stored in a ref (avoids async setState ordering issues)
+  const [path, setPath] = useState([]);
+  const pathRef = useRef([]);
+  const setPathBoth = (next) => {
+    pathRef.current = next;
+    setPath(next);
+  };
+
+  // mode: null | "click" | "drag"
+  const [mode, setMode] = useState(null);
+  const modeRef = useRef(null);
+  const setModeBoth = (m) => {
+    modeRef.current = m;
+    setMode(m);
+  };
+
+  // pointer tracking
+  const pointerDownRef = useRef(false);
+  const dragStartedRef = useRef(false);
+  const startCellRef = useRef(null); // {r,c}
+  const lastHoverRef = useRef(null); // {r,c}
+
+  // pointer position for “live” trail during drag
+  const [pointerPos, setPointerPos] = useState(null); // {x,y} relative to boardWrap
+  const rafRef = useRef(null);
+
+  // computed points for the trail (centers of chosen cells)
+  const [trailPoints, setTrailPoints] = useState([]); // [{x,y}, ...]
+
+  const makeCell = (r, c) => ({ r, c, letter: grid[r][c] });
+
+  const isAdjacent = (a, b) => {
+    const dr = Math.abs(a.r - b.r);
+    const dc = Math.abs(a.c - b.c);
+    return dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
+  };
+
+  // Add / backtrack step (works for both click + drag)
+  const applyStep = (r, c) => {
+    const current = pathRef.current;
+    const nextCell = makeCell(r, c);
+
+    if (current.length === 0) {
+      setPathBoth([nextCell]);
+      return;
+    }
+
+    const last = current[current.length - 1];
+    if (!isAdjacent(last, nextCell)) return;
+
+    // If revisiting a cell: backtrack
+    const idx = current.findIndex((p) => p.r === r && p.c === c);
+    if (idx !== -1) {
+      // if it's the immediate previous cell => pop one
+      if (current.length >= 2) {
+        const prev = current[current.length - 2];
+        if (prev.r === r && prev.c === c) {
+          setPathBoth(current.slice(0, -1));
+          return;
+        }
+      }
+      // otherwise truncate to that earlier point
+      setPathBoth(current.slice(0, idx + 1));
+      return;
+    }
+
+    // Normal add
+    setPathBoth([...current, nextCell]);
+  };
+
+  const commit = () => {
+    const p = pathRef.current;
+    if (p.length === 0) return;
+
+    const w = p.map((x) => x.letter).join("");
+    setPathBoth([]);
+    setModeBoth(null);
+    setPointerPos(null);
+
+    onCommitWord?.(w, p);
+  };
+
+  // Start tracking pointer down on a cell (do NOT auto-commit)
+  const onCellPointerDown = (r, c) => (e) => {
+    e.preventDefault();
+    pointerDownRef.current = true;
+    dragStartedRef.current = false;
+    startCellRef.current = { r, c };
+    lastHoverRef.current = { r, c };
+
+    // initialize pointer pos for live trail
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (rect) setPointerPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  // Global move/up listeners so dragging across cells is reliable
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!pointerDownRef.current) return;
+
+      // update live pointer position (throttled by rAF)
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (rect) {
+        const nextPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(() => {
+            setPointerPos(nextPos);
+            rafRef.current = null;
+          });
+        }
+      }
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = el?.closest?.('[data-cell="true"]');
+      if (!cell) return;
+
+      const r = Number(cell.dataset.r);
+      const c = Number(cell.dataset.c);
+      if (Number.isNaN(r) || Number.isNaN(c)) return;
+
+      const lastHover = lastHoverRef.current;
+      if (lastHover && lastHover.r === r && lastHover.c === c) return;
+      lastHoverRef.current = { r, c };
+
+      const start = startCellRef.current;
+      if (!start) return;
+
+      // If we ever move to a different cell while pointer is down => drag mode
+      if (!dragStartedRef.current && (r !== start.r || c !== start.c)) {
+        dragStartedRef.current = true;
+        setModeBoth("drag");
+        // Drag starts a fresh word from the start cell
+        setPathBoth([makeCell(start.r, start.c)]);
+      }
+
+      if (dragStartedRef.current) {
+        applyStep(r, c);
+      }
+    };
+
+    const handleUp = () => {
+      if (!pointerDownRef.current) return;
+
+      const start = startCellRef.current;
+
+      // If we never moved off the start cell => treat as click-select step
+      if (!dragStartedRef.current && start) {
+        setModeBoth("click");
+        applyStep(start.r, start.c);
+      }
+
+      // If we were dragging => commit on release
+      if (dragStartedRef.current) {
+        commit();
+      }
+
+      pointerDownRef.current = false;
+      dragStartedRef.current = false;
+      startCellRef.current = null;
+      lastHoverRef.current = null;
+      setPointerPos(null);
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grid]);
+
+  // Click-outside to commit (only for click mode)
+  useEffect(() => {
+    const handleDocPointerDown = (e) => {
+      if (modeRef.current !== "click") return;
+      if (pathRef.current.length === 0) return;
+
+      const board = boardRef.current;
+      if (board && !board.contains(e.target)) {
+        commit();
+      }
+    };
+
+    document.addEventListener("pointerdown", handleDocPointerDown, true);
+    return () => document.removeEventListener("pointerdown", handleDocPointerDown, true);
+  }, []);
+
+  // Compute trail points whenever path changes (measure centers)
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const boardRect = board.getBoundingClientRect();
+
+    const pts = path
+      .map(({ r, c }) => {
+        const el = cellRefs.current?.[r]?.[c];
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2 - boardRect.left,
+          y: rect.top + rect.height / 2 - boardRect.top,
+        };
+      })
+      .filter(Boolean);
+
+    setTrailPoints(pts);
+  }, [path]);
+
+  const word = path.map((p) => p.letter).join("");
+  const isInPath = (r, c) => path.some((p) => p.r === r && p.c === c);
+
+  // Build SVG polyline string
+  const effectivePoints =
+    mode === "drag" && pointerPos && trailPoints.length > 0
+      ? [...trailPoints, pointerPos]
+      : trailPoints;
+
+  const pointsAttr = effectivePoints.map((p) => `${p.x},${p.y}`).join(" ");
+
+  return (
+    <div className="grid-background">
+      <div className="wordPreview">
+        Selected: <strong>{word || "—"}</strong>
+      </div>
+
+      <div className="boardWrap" ref={boardRef}>
+        {/* Trail overlay */}
+        <svg className="trailSvg">
+          {effectivePoints.length >= 2 && (
+            <polyline className="trailLine" points={pointsAttr} />
+          )}
+        </svg>
+
+        <table className="gridTable">
+          <tbody>
+            {grid.map((row, r) => (
+              <tr key={r}>
+                {row.map((letter, c) => (
+                  <td key={`${r}-${c}`}>
+                    <div
+                      className={`circle ${isInPath(r, c) ? "selected" : ""}`}
+                      data-cell="true"
+                      data-r={r}
+                      data-c={c}
+                      ref={(el) => {
+                        cellRefs.current[r][c] = el;
+                      }}
+                      onPointerDown={onCellPointerDown(r, c)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      {letter}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
