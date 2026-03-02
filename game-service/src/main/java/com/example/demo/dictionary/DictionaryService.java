@@ -49,4 +49,3 @@ public class DictionaryService {
         return trie.isPrefix(prefix);
     }
 }
-

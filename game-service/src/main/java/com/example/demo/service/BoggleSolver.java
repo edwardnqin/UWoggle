@@ -75,4 +75,3 @@ public class BoggleSolver {
         return words.values().stream().mapToInt(Integer::intValue).sum();
     }
 }
-
