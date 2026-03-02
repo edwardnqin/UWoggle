@@ -51,8 +51,12 @@ CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
 
 -- add table for board layout and max score
 CREATE TABLE IF NOT EXISTS games (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     board_layout VARCHAR(255) NOT NULL,
-    max_score    INT NOT NULL,
-    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    max_score INT NOT NULL,
+    final_score INT NULL,
+    found_words TEXT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL
 );
