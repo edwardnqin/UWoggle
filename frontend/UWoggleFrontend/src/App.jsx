@@ -20,6 +20,12 @@ export default function App() {
   const [view,       setView]       = useState("home");
   const [loginOpen,  setLoginOpen]  = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  const [fbCategory, setFbCategory] = useState("suggestion");
+  const [fbMessage, setFbMessage] = useState("");
+  const [fbContact, setFbContact] = useState("");
+  const [fbStatus, setFbStatus] = useState(null); // null | "sending" | "sent" | "error"
 
   // Logged-in user (null = guest)
   const [user, setUser] = useState(null);
@@ -181,6 +187,10 @@ export default function App() {
             onGo={setView}
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
+            onFeedback={() => {
+              setFbStatus(null);
+              setFeedbackOpen(true);
+            }}
             user={user}
           />
         ) : view === "play" ? (
@@ -293,6 +303,84 @@ export default function App() {
               {suLoading ? "Creating…" : "Create"}
             </HudButton>
           )}
+        </div>
+      </Modal>
+
+      <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
+        <div className="field">
+          <label htmlFor="fb-category">Category</label>
+          <select
+            id="fb-category"
+            value={fbCategory}
+            onChange={(e) => setFbCategory(e.target.value)}
+          >
+            <option value="bug">Bug</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="ui">UI/UX</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="fb-message">Message</label>
+          <textarea
+            id="fb-message"
+            rows={5}
+            placeholder="Tell us what you think…"
+            value={fbMessage}
+            onChange={(e) => setFbMessage(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="fb-contact">Contact (optional)</label>
+          <input
+            id="fb-contact"
+            placeholder="Email / Discord"
+            value={fbContact}
+            onChange={(e) => setFbContact(e.target.value)}
+          />
+        </div>
+
+        {fbStatus === "sent" ? (
+          <div className="modalHint">Thanks! Your feedback was sent.</div>
+        ) : fbStatus === "error" ? (
+          <div className="modalHint">Could not send feedback. Please try again.</div>
+        ) : null}
+
+        <div className="modalActions">
+          <HudButton variant="miniCancel" onClick={() => setFeedbackOpen(false)}>
+            Cancel
+          </HudButton>
+          <HudButton
+            variant="mini"
+            onClick={async () => {
+              if (!fbMessage.trim()) {
+                setFbStatus("error");
+                return;
+              }
+              try {
+                setFbStatus("sending");
+                const resp = await fetch("/api/feedback", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    category: fbCategory,
+                    message: fbMessage,
+                    contact: fbContact,
+                  }),
+                });
+                if (!resp.ok) throw new Error("bad response");
+                setFbStatus("sent");
+                setFbMessage("");
+                setFbContact("");
+              } catch {
+                setFbStatus("error");
+              }
+            }}
+          >
+            {fbStatus === "sending" ? "Sending…" : "Send"}
+          </HudButton>
         </div>
       </Modal>
     </div>

@@ -1,0 +1,36 @@
+.playMain {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+    width: min(980px, 100%);
+  }
+  
+  .playBoard {
+    flex: 0 0 auto;
+  }
+  
+  .foundWordsPanel {
+    flex: 0 0 260px;   /* right column width */
+    max-height: 520px; /* keep it from growing forever */
+    overflow: hidden;
+  }
+  
+  .foundWordsList {
+    max-height: 420px; /* scroll the list */
+    overflow: auto;
+    padding-right: 8px;
+  }
+  
+  /* mobile: stack vertically */
+  @media (max-width: 800px) {
+    .playMain {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .foundWordsPanel {
+      width: min(520px, 100%);
+      flex-basis: auto;
+    }
+  }
