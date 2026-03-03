@@ -1,22 +1,21 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
+import { getBoard } from "../../services/api";
 
 export default function Grid({ onCommitWord }) {
-  const grid = useMemo(
-    () => [
-      ["A", "B", "C", "D"],
-      ["E", "F", "G", "H"],
-      ["I", "J", "K", "L"],
-      ["M", "N", "O", "P"],
-    ],
-    []
-  );
+  const [grid, setGrid] = useState(null);
+
+  useEffect(() => {
+    getBoard().then((res) => {
+      if (res.ok && res.data?.board) setGrid(res.data.board);
+    });
+  }, []);
 
   // Wrap container (for outside-click detection + trail coordinate space)
   const boardRef = useRef(null);
 
-  // Store element refs for measuring centers
-  const cellRefs = useRef(Array.from({ length: 4 }, () => Array(4).fill(null)));
+  // Store element refs for measuring centers (sized when grid is set)
+  const cellRefs = useRef([]);
 
   // Canonical path stored in a ref (avoids async setState ordering issues)
   const [path, setPath] = useState([]);
@@ -115,6 +114,8 @@ export default function Grid({ onCommitWord }) {
 
   // Global move/up listeners so dragging across cells is reliable
   useEffect(() => {
+    if (!grid) return;
+
     const handleMove = (e) => {
       if (!pointerDownRef.current) return;
 
@@ -229,6 +230,25 @@ export default function Grid({ onCommitWord }) {
 
     setTrailPoints(pts);
   }, [path]);
+
+  if (!grid) {
+    return (
+      <div className="grid-background">
+        <div className="wordPreview">Loading board…</div>
+      </div>
+    );
+  }
+
+  // Size cellRefs to match API board dimensions
+  const rows = grid.length;
+  const cols = grid[0]?.length ?? 0;
+  if (
+    !cellRefs.current.length ||
+    cellRefs.current.length !== rows ||
+    cellRefs.current[0]?.length !== cols
+  ) {
+    cellRefs.current = grid.map((row) => row.map(() => null));
+  }
 
   const word = path.map((p) => p.letter).join("");
   const isInPath = (r, c) => path.some((p) => p.r === r && p.c === c);
