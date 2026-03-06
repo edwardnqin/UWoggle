@@ -32,13 +32,14 @@ export default function Home({ onGo, onLogin, onSignup, onFeedback }) {
           History
         </HudButton>
 
-        <HudButton className="playBtn" onClick={() => onGo("play")} ariaLabel="Play">
+        <HudButton className="playBtn" onClick={() => onGo("singleplayer")} ariaLabel="Play">
           <PlayIcon size={22} />
-          Play
+          Singleplayer
         </HudButton>
 
         <HudButton onClick={() => onGo("online")} ariaLabel="Open online">
-          Online
+          <PlayIcon size={22} />
+          Multiplayer
         </HudButton>
       </div>
     </>

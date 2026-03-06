@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 import Home        from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
-import Play        from "./pages/Play";
+import ModeSelect  from "./pages/ModeSelect";
 import Modal       from "./components/ui/Modal";
 import HudButton   from "./components/ui/HudButton";
 
@@ -11,7 +11,7 @@ import { login, register, resendVerification } from "./services/api";
 
 const VIEWS = {
   home:    { title: null,       subtitle: null },
-  play:    { title: "Play",     subtitle: "Hook this up to your game board screen (timer, board generation, scoring)." },
+  singleplayer:    { title: "Singeplayer Mode Select",     subtitle: "Choose a mode to play!" },
   online:  { title: "Online",   subtitle: "Matchmaking / lobby / invite-a-friend can live here." },
   history: { title: "History",  subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
 };
@@ -193,9 +193,10 @@ export default function App() {
             }}
             user={user}
           />
-        ) : view === "play" ? (
-          <Play
+        ) : view === "singleplayer" ? (
+          <ModeSelect
             onBack={() => setView("home")}
+            onGo={setView}
             title={current.title}
             subtitle={current.subtitle}
           />

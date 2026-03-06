@@ -1,6 +1,6 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import React, { useState } from "react";
+import { useState } from "react";
 
 export default function Play({ title, subtitle, onBack }) {
   const [foundWords, setFoundWords] = useState([]);
