@@ -3,7 +3,12 @@ import "./App.css";
 
 import Home        from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
-import ModeSelect  from "./pages/ModeSelect";
+import SingleModeSelect  from "./pages/SingleModeSelect";
+import SingleUnlimited   from "./pages/SingleUnlimited";
+import SingleTimed from "./pages/SingleTimed";
+import EndScreen from "./pages/EndScreen";
+
+
 import Modal       from "./components/ui/Modal";
 import HudButton   from "./components/ui/HudButton";
 
@@ -12,6 +17,9 @@ import { login, register, resendVerification } from "./services/api";
 const VIEWS = {
   home:    { title: null,       subtitle: null },
   singleplayer:    { title: "Singeplayer Mode Select",     subtitle: "Choose a mode to play!" },
+  unlimited:    { title: null, subtitle: null},
+  timed: { title: null, subtitle: null},
+  end: { title: "GAME END", subtitle: "Here are the game stats:"},
   online:  { title: "Online",   subtitle: "Matchmaking / lobby / invite-a-friend can live here." },
   history: { title: "History",  subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
 };
@@ -194,11 +202,29 @@ export default function App() {
             user={user}
           />
         ) : view === "singleplayer" ? (
-          <ModeSelect
+          <SingleModeSelect
             onBack={() => setView("home")}
             onGo={setView}
             title={current.title}
             subtitle={current.subtitle}
+          />
+        ) : view === "unlimited" ? (
+          <SingleUnlimited
+            title={current.title}
+            subtitle={current.subtitle}
+            onGiveUp={() => setView("end")}
+          />
+        ) : view === "timed" ? (
+          <SingleTimed 
+            title={current.title}
+            subtitle={current.subtitle}
+            onGiveUp={() => setView("end")}
+          />
+        ) : view === "end" ? (
+          <EndScreen
+            title={current.title}
+            subtitle={current.subtitle}
+            onReturn={() => setView("home")}
           />
         ) : (
           <Placeholder

@@ -1,7 +1,7 @@
 import HudButton from "../components/ui/HudButton";
 import PlayIcon from "../components/ui/PlayIcon";
 
-export default function ModeSelect({ onBack, onGo, title, subtitle}) {
+export default function SingleModeSelect({ onBack, onGo, title, subtitle}) {
 
     return (
         <div className="screen">
@@ -16,7 +16,7 @@ export default function ModeSelect({ onBack, onGo, title, subtitle}) {
                 <div className="pageSubtitle">{subtitle}</div>
 
                 <HudButton
-                    // onClick={() => onGo("placeholder")} // change this when making unlimited page
+                    onClick={() => onGo("unlimited")}
                     className="playBtn"
                     ariaLabel="Unlimited Mode"
                 >
@@ -25,7 +25,7 @@ export default function ModeSelect({ onBack, onGo, title, subtitle}) {
                 </HudButton>
 
                 <HudButton 
-                    // onClick={() => onGo("placeholder")} // change this when making timed page
+                    onClick={() => onGo("timed")}
                     className="playBtn"
                     ariaLabel="Timer mode"
                 >

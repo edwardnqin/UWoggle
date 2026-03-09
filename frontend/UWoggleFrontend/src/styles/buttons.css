@@ -65,7 +65,7 @@
   .btn:hover{
     transform: translateY(-2px);
     filter: brightness(1.02);
-  }
+  }outline-offset: 4px;
 
   .btn:hover:before{
     box-shadow: var(--shadowHover), 0 0 18px var(--glow), 0 0 22px var(--glowRed);
@@ -131,6 +131,12 @@
   .btn:focus{
     outline: 3px solid rgba(255,255,255,.55);
     outline-offset: 4px;
+  }
+
+  /* Don't stretch in flex parents */
+  .btn--fit{
+    width: fit-content;
+    align-self: center;
   }
 
   /* Variants */
