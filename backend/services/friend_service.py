@@ -1,0 +1,147 @@
+import pymysql
+
+def list_friends(conn, user_id: int):
+    sql = """
+          SELECT
+              CASE
+                  WHEN f.requester_id = %(user_id)s THEN u2.user_id
+                  ELSE u1.user_id
+                  END AS friend_user_id,
+              CASE
+                  WHEN f.requester_id = %(user_id)s THEN u2.username
+                  ELSE u1.username
+                  END AS friend_username
+          FROM friends f
+                   JOIN users u1 ON u1.user_id = f.requester_id
+                   JOIN users u2 ON u2.user_id = f.addressee_id
+          WHERE (f.requester_id = %(user_id)s OR f.addressee_id = %(user_id)s)
+            AND f.status = 'ACCEPTED'; \
+          """
+    with conn.cursor() as cur:
+        cur.execute(sql, {"user_id": user_id})
+        rows = cur.fetchall()
+    return [{"user_id": r["friend_user_id"], "username": r["friend_username"]} for r in rows]
+
+
+def list_requests(conn, user_id: int):
+    incoming_sql = """
+                   SELECT f.id AS request_id, u.user_id AS from_user_id, u.username AS from_username, f.created_at
+                   FROM friends f
+                            JOIN users u ON u.user_id = f.requester_id
+                   WHERE f.addressee_id = %(user_id)s AND f.status = 'PENDING'; \
+                   """
+    outgoing_sql = """
+                   SELECT f.id AS request_id, u.user_id AS to_user_id, u.username AS to_username, f.created_at
+                   FROM friends f
+                            JOIN users u ON u.user_id = f.addressee_id
+                   WHERE f.requester_id = %(user_id)s AND f.status = 'PENDING'; \
+                   """
+    with conn.cursor() as cur:
+        cur.execute(incoming_sql, {"user_id": user_id})
+        incoming = cur.fetchall()
+        cur.execute(outgoing_sql, {"user_id": user_id})
+        outgoing = cur.fetchall()
+
+    return {
+        "incoming": [
+            {
+                "request_id": r["request_id"],
+                "from_user_id": r["from_user_id"],
+                "from_username": r["from_username"],
+                "created_at": str(r["created_at"])
+            } for r in incoming
+        ],
+        "outgoing": [
+            {
+                "request_id": r["request_id"],
+                "to_user_id": r["to_user_id"],
+                "to_username": r["to_username"],
+                "created_at": str(r["created_at"])
+            } for r in outgoing
+        ]
+    }
+
+
+def send_request(conn, requester_id: int, addressee_id: int):
+    if requester_id == addressee_id:
+        return (False, "Cannot friend yourself")
+
+    # Check user exists (optional but good)
+    with conn.cursor() as cur:
+        cur.execute("SELECT user_id FROM users WHERE user_id=%s", (requester_id,))
+        if cur.fetchone() is None:
+            return (False, "Requester not found")
+        cur.execute("SELECT user_id FROM users WHERE user_id=%s", (addressee_id,))
+        if cur.fetchone() is None:
+            return (False, "Addressee not found")
+
+    # Check if relationship already exists in either direction
+    exists_sql = """
+                 SELECT id, status FROM friends
+                 WHERE (requester_id=%s AND addressee_id=%s)
+                    OR (requester_id=%s AND addressee_id=%s)
+                     LIMIT 1; \
+                 """
+    with conn.cursor() as cur:
+        cur.execute(exists_sql, (requester_id, addressee_id, addressee_id, requester_id))
+        existing = cur.fetchone()
+
+    if existing is not None:
+        return (False, f"Friend relationship already exists (status={existing['status']})")
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO friends (requester_id, addressee_id, status) VALUES (%s, %s, 'PENDING')",
+                (requester_id, addressee_id)
+            )
+        conn.commit()
+        return (True, "Request sent")
+    except pymysql.err.IntegrityError:
+        # covers unique friend pair constraint
+        return (False, "Friend relationship already exists")
+
+
+def respond_request(conn, request_id: int, action: str):
+    action = (action or "").upper()
+    if action not in ("ACCEPT", "DECLINE"):
+        return (False, "action must be ACCEPT or DECLINE")
+
+    if action == "ACCEPT":
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE friends SET status='ACCEPTED', responded_at=NOW() WHERE id=%s AND status='PENDING'",
+                (request_id,)
+            )
+            updated = cur.rowcount
+        conn.commit()
+        if updated == 0:
+            return (False, "Request not found or not pending")
+        return (True, "Request accepted")
+
+    # DECLINE => delete pending row
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM friends WHERE id=%s AND status='PENDING'", (request_id,))
+        deleted = cur.rowcount
+    conn.commit()
+    if deleted == 0:
+        return (False, "Request not found or not pending")
+    return (True, "Request declined")
+
+
+def remove_friend(conn, user_id: int, friend_id: int):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM friends
+            WHERE status='ACCEPTED'
+              AND ((requester_id=%s AND addressee_id=%s)
+                OR (requester_id=%s AND addressee_id=%s))
+            """,
+            (user_id, friend_id, friend_id, user_id)
+        )
+        deleted = cur.rowcount
+    conn.commit()
+    if deleted == 0:
+        return (False, "Friend relationship not found")
+    return (True, "Friend removed")
