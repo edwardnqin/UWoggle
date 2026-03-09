@@ -4,11 +4,39 @@ import { getBoard } from "../../services/api";
 
 export default function Grid({ onCommitWord }) {
   const [grid, setGrid] = useState(null);
+  const [boardWords, setBoardWords] = useState({});
+  const [status, setStatus] = useState("Loading board...");
+
+  // Track accepted words locally so duplicates are blocked immediately
+  const submittedWordsRef = useRef(new Set());
 
   useEffect(() => {
+    let cancelled = false;
+
     getBoard().then((res) => {
-      if (res.ok && res.data?.board) setGrid(res.data.board);
+      if (cancelled) return;
+
+      if (!res.ok || !res.data?.board) {
+        setStatus("Failed to load board.");
+        return;
+      }
+
+      const normalizedWords = Object.fromEntries(
+        Object.entries(res.data.words ?? {}).map(([word, points]) => [
+          word.toUpperCase(),
+          Number(points),
+        ])
+      );
+
+      setGrid(res.data.board);
+      setBoardWords(normalizedWords);
+      submittedWordsRef.current = new Set();
+      setStatus("Board ready.");
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Wrap container (for outside-click detection + trail coordinate space)
@@ -91,12 +119,31 @@ export default function Grid({ onCommitWord }) {
     const p = pathRef.current;
     if (p.length === 0) return;
 
-    const w = p.map((x) => x.letter).join("");
+    const w = p.map((x) => x.letter).join("").toUpperCase().trim();
+
     setPathBoth([]);
     setModeBoth(null);
     setPointerPos(null);
 
-    onCommitWord?.(w, p);
+    if (w.length < 3) {
+      setStatus(`"${w}" is too short.`);
+      return;
+    }
+
+    if (submittedWordsRef.current.has(w)) {
+      setStatus(`"${w}" was already found.`);
+      return;
+    }
+
+    const points = boardWords[w];
+    if (!points) {
+      setStatus(`"${w}" is not a valid word on this board.`);
+      return;
+    }
+
+    submittedWordsRef.current.add(w);
+    setStatus(`Accepted: "${w}" (+${points})`);
+    onCommitWord?.(w, points);
   };
 
   // Start tracking pointer down on a cell (do NOT auto-commit)
@@ -191,7 +238,7 @@ export default function Grid({ onCommitWord }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid]);
+  }, [grid, boardWords]);
 
   // Click-outside to commit (only for click mode)
   useEffect(() => {
@@ -207,7 +254,8 @@ export default function Grid({ onCommitWord }) {
 
     document.addEventListener("pointerdown", handleDocPointerDown, true);
     return () => document.removeEventListener("pointerdown", handleDocPointerDown, true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardWords]);
 
   // Compute trail points whenever path changes (measure centers)
   useLayoutEffect(() => {
@@ -234,7 +282,7 @@ export default function Grid({ onCommitWord }) {
   if (!grid) {
     return (
       <div className="grid-background">
-        <div className="wordPreview">Loading board…</div>
+        <div className="wordPreview">{status}</div>
       </div>
     );
   }
@@ -265,10 +313,11 @@ export default function Grid({ onCommitWord }) {
     <div className="grid-background">
       <div className="wordPreview">
         Selected: <strong>{word || "—"}</strong>
+        <br />
+        <span>{status}</span>
       </div>
 
       <div className="boardWrap" ref={boardRef}>
-        {/* Trail overlay */}
         <svg className="trailSvg">
           {effectivePoints.length >= 2 && (
             <polyline className="trailLine" points={pointsAttr} />

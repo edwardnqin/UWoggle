@@ -5,18 +5,21 @@ import { useState } from "react";
 export default function SingleTimed({ title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
 
-  const handleCommitWord = (word) => {
+  const handleCommitWord = (word, points) => {
     const w = word.toUpperCase().trim();
     if (w.length < 3) return;
-    setFoundWords((prev) => (prev.includes(w) ? prev : [...prev, w]));
+
+    setFoundWords((prev) => {
+      if (prev.includes(w)) return prev;
+      return [...prev, w];
+    });
   };
 
-//   Missing scoreboard component
-// Missing timer component
+  // Missing scoreboard component
+  // Missing timer component
   return (
     <div className="screen">
-      <div className="topBar">
-      </div>
+      <div className="topBar"></div>
 
       <div className="centerStack">
         <div className="pageTitle">{title}</div>
@@ -42,9 +45,9 @@ export default function SingleTimed({ title, subtitle, onGiveUp }) {
         </div>
       </div>
 
-       <HudButton className="btn--fit" onClick={onGiveUp} ariaLabel="Give up">
-          Give Up
-        </HudButton>
+      <HudButton className="btn--fit" onClick={onGiveUp} ariaLabel="Give up">
+        Give Up
+      </HudButton>
     </div>
   );
 }
