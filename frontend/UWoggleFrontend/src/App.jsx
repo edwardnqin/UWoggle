@@ -3,11 +3,9 @@ import "./App.css";
 
 import Home        from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
-import SingleModeSelect  from "./pages/SingleModeSelect";
 import SingleUnlimited   from "./pages/SingleUnlimited";
 import SingleTimed from "./pages/SingleTimed";
 import EndScreen from "./pages/EndScreen";
-
 
 import Modal       from "./components/ui/Modal";
 import HudButton   from "./components/ui/HudButton";
@@ -16,7 +14,6 @@ import { login, register, resendVerification } from "./services/api";
 
 const VIEWS = {
   home:    { title: null,       subtitle: null },
-  singleplayer:    { title: "Singeplayer Mode Select",     subtitle: "Choose a mode to play!" },
   unlimited:    { title: null, subtitle: null},
   timed: { title: null, subtitle: null},
   end: { title: "GAME END", subtitle: "Here are the game stats:"},
@@ -26,6 +23,7 @@ const VIEWS = {
 
 export default function App() {
   const [view,       setView]       = useState("home");
+  const [timerDuration, setTimerDuration] = useState(null); // if user chooses timed mode, set as timer duration.
   const [loginOpen,  setLoginOpen]  = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -193,6 +191,7 @@ export default function App() {
         {view === "home" ? (
           <Home
             onGo={setView}
+            onSetTimerDuration={setTimerDuration}
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
             onFeedback={() => {
@@ -200,13 +199,6 @@ export default function App() {
               setFeedbackOpen(true);
             }}
             user={user}
-          />
-        ) : view === "singleplayer" ? (
-          <SingleModeSelect
-            onBack={() => setView("home")}
-            onGo={setView}
-            title={current.title}
-            subtitle={current.subtitle}
           />
         ) : view === "unlimited" ? (
           <SingleUnlimited
@@ -216,6 +208,7 @@ export default function App() {
           />
         ) : view === "timed" ? (
           <SingleTimed 
+            timerDuration={timerDuration}
             title={current.title}
             subtitle={current.subtitle}
             onGiveUp={() => setView("end")}
