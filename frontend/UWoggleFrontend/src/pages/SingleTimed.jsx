@@ -2,7 +2,7 @@ import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useState } from "react";
 
-export default function SingleTimed({ title, subtitle, onGiveUp }) {
+export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
 
   const handleCommitWord = (word, points) => {
@@ -16,7 +16,7 @@ export default function SingleTimed({ title, subtitle, onGiveUp }) {
   };
 
   // Missing scoreboard component
-  // Missing timer component
+  // Missing timer component -- use timerDuration prop!!
   return (
     <div className="screen">
       <div className="topBar"></div>
