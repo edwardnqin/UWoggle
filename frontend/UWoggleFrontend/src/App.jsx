@@ -24,6 +24,7 @@ const VIEWS = {
 export default function App() {
   const [view,       setView]       = useState("home");
   const [timerDuration, setTimerDuration] = useState(null); // if user chooses timed mode, set as timer duration.
+  const [lastGameStats, setLastGameStats] = useState(null);
   const [loginOpen,  setLoginOpen]  = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -211,12 +212,20 @@ export default function App() {
             timerDuration={timerDuration}
             title={current.title}
             subtitle={current.subtitle}
-            onGiveUp={() => setView("end")}
+            onGiveUp={(stats) => {
+              setLastGameStats(stats);
+              setView("end");
+            }}
+            onTimeUp={(stats) => {
+              setLastGameStats(stats);
+              setView("end");
+            }}
           />
         ) : view === "end" ? (
           <EndScreen
             title={current.title}
             subtitle={current.subtitle}
+            gameStats={lastGameStats}
             onReturn={() => setView("home")}
           />
         ) : (
