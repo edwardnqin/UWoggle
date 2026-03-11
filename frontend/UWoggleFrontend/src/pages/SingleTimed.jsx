@@ -1,22 +1,90 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp }) {
+function formatTime(totalSeconds) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+export default function SingleTimed({
+  timerDuration,
+  title,
+  subtitle,
+  onGiveUp,
+  onTimeUp,
+}) {
+  const initialSeconds = useMemo(() => {
+    const minutes = Number(timerDuration);
+    return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 : 300;
+  }, [timerDuration]);
+
   const [foundWords, setFoundWords] = useState([]);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  const finishedRef = useRef(false);
 
-  const handleCommitWord = (word, points) => {
+  useEffect(() => {
+    setFoundWords([]);
+    setScore(0);
+    setTimeLeft(initialSeconds);
+    finishedRef.current = false;
+  }, [initialSeconds]);
+
+  useEffect(() => {
+    if (finishedRef.current) return undefined;
+    if (timeLeft <= 0) {
+      finishedRef.current = true;
+      onTimeUp?.({
+        score,
+        foundWords,
+        totalWords: foundWords.length,
+        timerDuration: Number(timerDuration) || 5,
+        reason: "time_up",
+      });
+      return undefined;
+    }
+
+    const timerId = window.setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timerId);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [timeLeft, score, foundWords, timerDuration, onTimeUp]);
+
+  const handleCommitWord = (word) => {
+    if (finishedRef.current || timeLeft <= 0) return;
+
     const w = word.toUpperCase().trim();
     if (w.length < 3) return;
 
     setFoundWords((prev) => {
       if (prev.includes(w)) return prev;
+      setScore((currentScore) => currentScore + 1);
       return [...prev, w];
     });
   };
 
-  // Missing scoreboard component
-  // Missing timer component -- use timerDuration prop!!
+  const handleGiveUp = () => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    onGiveUp?.({
+      score,
+      foundWords,
+      totalWords: foundWords.length,
+      timerDuration: Number(timerDuration) || 5,
+      reason: "give_up",
+    });
+  };
+
   return (
     <div className="screen">
       <div className="topBar"></div>
@@ -30,22 +98,42 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp }
             <Grid onCommitWord={handleCommitWord} />
           </div>
 
-          <div className="hintCard foundWordsPanel">
-            <div className="hintTitle">Found Words</div>
-            {foundWords.length === 0 ? (
-              <div className="pageSubtitle">No words yet.</div>
-            ) : (
-              <ul className="hintList foundWordsList">
-                {foundWords.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
+          <div className="playSidebar">
+            <div className="hintCard scoreboardPanel">
+              <div className="hintTitle">Game Stats</div>
+              <ul className="hintList statsList">
+                <li>
+                  <strong>Time Left:</strong> {formatTime(timeLeft)}
+                </li>
+                <li>
+                  <strong>Score:</strong> {score}
+                </li>
+                <li>
+                  <strong>Words Found:</strong> {foundWords.length}
+                </li>
+                <li>
+                  <strong>Scoring Rule:</strong> 1 point per word
+                </li>
               </ul>
-            )}
+            </div>
+
+            <div className="hintCard foundWordsPanel">
+              <div className="hintTitle">Found Words</div>
+              {foundWords.length === 0 ? (
+                <div className="pageSubtitle">No words yet.</div>
+              ) : (
+                <ul className="hintList foundWordsList">
+                  {foundWords.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <HudButton className="btn--fit" onClick={onGiveUp} ariaLabel="Give up">
+      <HudButton className="btn--fit" onClick={handleGiveUp} ariaLabel="Give up">
         Give Up
       </HudButton>
     </div>
