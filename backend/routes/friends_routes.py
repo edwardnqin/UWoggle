@@ -1,78 +1,151 @@
-import os
-from database import db
-from flask import Flask
-from dotenv import load_dotenv
+"""
+friends_routes.py
 
-# Load .env variables before anything else
-load_dotenv()
+Flask routes for Friend System endpoints.
+
+Endpoints:
+- GET    /api/friends/<user_id>              -> list accepted friends
+- GET    /api/friends/<user_id>/requests     -> list pending (incoming/outgoing)
+- POST   /api/friends/request                -> send friend request
+- POST   /api/friends/<request_id>/respond   -> accept/decline request
+- DELETE /api/friends/remove                 -> remove accepted friend
+
+This file should be registered in app.py via:
+    app.register_blueprint(friends_bp)
+"""
+
+from __future__ import annotations
+
+from flask import Blueprint, request, jsonify
+from database import get_db_connection
+from services.friend_service import (
+    list_friends,
+    list_requests,
+    send_request,
+    respond_request,
+    remove_friend,
+)
+
+friends_bp = Blueprint("friends", __name__, url_prefix="/api/friends")
 
 
-def _build_default_mysql_uri() -> str | None:
-    """Build a MySQL SQLAlchemy URI from env vars (works with db/docker-compose.yml).
-
-    Expected env vars (with sensible defaults):
-      - MYSQL_USER (default: root)
-      - MYSQL_PASSWORD (default: root)
-      - MYSQL_HOST (default: localhost)
-      - MYSQL_PORT (default: 3306)
-      - MYSQL_DATABASE (default: uwoggle)
+@friends_bp.get("/<int:user_id>")
+def get_friends(user_id: int):
     """
-    user = os.environ.get("MYSQL_USER") or os.environ.get("MYSQL_USERNAME") or "root"
-    password = os.environ.get("MYSQL_PASSWORD") or os.environ.get("MYSQL_ROOT_PASSWORD") or "root"
-    host = os.environ.get("MYSQL_HOST", "localhost")
-    port = os.environ.get("MYSQL_PORT", "3306")
-    database = os.environ.get("MYSQL_DATABASE", "uwoggle")
+    List accepted friends for a user.
 
-    # If nothing was provided, still return a workable local default.
-    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
-
-
-def _resolve_database_uri() -> str:
-    """Resolve DB URI in this priority order:
-    1) DATABASE_URL (explicit)
-    2) Build MySQL URI from MYSQL_* env vars
-    3) Fallback to local SQLite file (ONLY for dev convenience)
+    Returns:
+        200: JSON list of friends
     """
-    explicit = os.environ.get("DATABASE_URL")
-    if explicit:
-        return explicit
-
-    # Prefer MySQL because the project already includes db/docker-compose.yml
-    mysql_uri = _build_default_mysql_uri()
-    if mysql_uri:
-        return mysql_uri
-
-    # Last resort fallback (dev only)
-    return "sqlite:///uwoggle_dev.db"
+    conn = get_db_connection()
+    try:
+        friends = list_friends(conn, user_id)
+        return jsonify(friends), 200
+    finally:
+        conn.close()
 
 
-def create_app():
-    app = Flask(__name__)
+@friends_bp.get("/<int:user_id>/requests")
+def get_requests(user_id: int):
+    """
+    List pending friend requests for a user (incoming + outgoing).
 
-    # --- Config ---
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = _resolve_database_uri()
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # --- Initialize extensions ---
-    db.init_app(app)
-
-    # --- Register blueprints (routes) ---
-    from routes.auth_routes import auth_bp
-    from routes.board_routes import board_bp
-    from routes.feedback_routes import feedback_bp
-
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(board_bp)
-    app.register_blueprint(feedback_bp)
-
-    # --- Create database tables if they don't exist ---
-    with app.app_context():
-        db.create_all()
-
-    return app
+    Returns:
+        200: JSON object {incoming: [...], outgoing: [...]}
+    """
+    conn = get_db_connection()
+    try:
+        data = list_requests(conn, user_id)
+        return jsonify(data), 200
+    finally:
+        conn.close()
 
 
-if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)
+@friends_bp.post("/request")
+def post_request():
+    """
+    Send a friend request.
+
+    Expected JSON body:
+        {
+          "requester_id": <int>,
+          "addressee_id": <int>
+        }
+
+    Returns:
+        201: if request created
+        400: validation errors (missing fields, duplicates, self-friend, etc.)
+    """
+    payload = request.get_json(silent=True) or {}
+    requester_id = payload.get("requester_id")
+    addressee_id = payload.get("addressee_id")
+
+    if requester_id is None or addressee_id is None:
+        return jsonify({"error": "requester_id and addressee_id are required"}), 400
+
+    conn = get_db_connection()
+    try:
+        ok, msg = send_request(conn, int(requester_id), int(addressee_id))
+        if not ok:
+            return jsonify({"error": msg}), 400
+        return jsonify({"message": msg}), 201
+    finally:
+        conn.close()
+
+
+@friends_bp.post("/<int:request_id>/respond")
+def post_respond(request_id: int):
+    """
+    Accept or decline a pending friend request.
+
+    Expected JSON body:
+        { "action": "ACCEPT" }  or  { "action": "DECLINE" }
+
+    Returns:
+        200: action succeeded
+        400: invalid action / request not found or not pending
+    """
+    payload = request.get_json(silent=True) or {}
+    action = payload.get("action")
+
+    conn = get_db_connection()
+    try:
+        ok, msg = respond_request(conn, request_id, action)
+        if not ok:
+            return jsonify({"error": msg}), 400
+        return jsonify({"message": msg}), 200
+    finally:
+        conn.close()
+
+
+@friends_bp.delete("/remove")
+def delete_friend():
+    """
+    Remove an accepted friend relationship.
+
+    Expected JSON body:
+        {
+          "user_id": <int>,
+          "friend_id": <int>
+        }
+
+    Returns:
+        200: removed successfully
+        404: relationship not found
+        400: missing fields
+    """
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("user_id")
+    friend_id = payload.get("friend_id")
+
+    if user_id is None or friend_id is None:
+        return jsonify({"error": "user_id and friend_id are required"}), 400
+
+    conn = get_db_connection()
+    try:
+        ok, msg = remove_friend(conn, int(user_id), int(friend_id))
+        if not ok:
+            return jsonify({"error": msg}), 404
+        return jsonify({"message": msg}), 200
+    finally:
+        conn.close()
