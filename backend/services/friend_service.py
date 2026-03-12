@@ -1,6 +1,45 @@
+"""
+friend_service.py
+
+Service-layer functions for the Friend System.
+
+This module contains database logic for:
+- Listing accepted friends
+- Listing incoming/outgoing pending requests
+- Sending a friend request
+- Accepting/declining a friend request
+- Removing an accepted friend
+
+These functions are designed to be called by Flask route handlers.
+They expect a live DB connection object (e.g., from get_db_connection()).
+
+Tables used:
+- users(user_id, username, ...)
+- friends(id, requester_id, addressee_id, status, created_at, responded_at, ...)
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Tuple, Optional
 import pymysql
 
-def list_friends(conn, user_id: int):
+
+def list_friends(conn, user_id: int) -> List[Dict[str, Any]]:
+    """
+    Return all accepted friends for a given user.
+
+    A single friendship row in `friends` can represent either direction:
+    - requester_id -> addressee_id
+
+    For a given `user_id`, we return the "other user" as the friend.
+
+    Args:
+        conn: Active DB connection (DictCursor recommended).
+        user_id: The user to list friends for.
+
+    Returns:
+        List of dicts: [{ "user_id": <friend_id>, "username": <friend_username> }, ...]
+    """
     sql = """
           SELECT
               CASE
@@ -20,10 +59,23 @@ def list_friends(conn, user_id: int):
     with conn.cursor() as cur:
         cur.execute(sql, {"user_id": user_id})
         rows = cur.fetchall()
+
     return [{"user_id": r["friend_user_id"], "username": r["friend_username"]} for r in rows]
 
 
-def list_requests(conn, user_id: int):
+def list_requests(conn, user_id: int) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Return pending friend requests for a given user:
+    - incoming: requests where user_id is the addressee
+    - outgoing: requests where user_id is the requester
+
+    Args:
+        conn: Active DB connection.
+        user_id: User whose pending requests we want.
+
+    Returns:
+        Dict with "incoming" and "outgoing" lists.
+    """
     incoming_sql = """
                    SELECT f.id AS request_id, u.user_id AS from_user_id, u.username AS from_username, f.created_at
                    FROM friends f
@@ -36,6 +88,7 @@ def list_requests(conn, user_id: int):
                             JOIN users u ON u.user_id = f.addressee_id
                    WHERE f.requester_id = %(user_id)s AND f.status = 'PENDING'; \
                    """
+
     with conn.cursor() as cur:
         cur.execute(incoming_sql, {"user_id": user_id})
         incoming = cur.fetchall()
@@ -48,25 +101,46 @@ def list_requests(conn, user_id: int):
                 "request_id": r["request_id"],
                 "from_user_id": r["from_user_id"],
                 "from_username": r["from_username"],
-                "created_at": str(r["created_at"])
-            } for r in incoming
+                "created_at": str(r["created_at"]),
+            }
+            for r in incoming
         ],
         "outgoing": [
             {
                 "request_id": r["request_id"],
                 "to_user_id": r["to_user_id"],
                 "to_username": r["to_username"],
-                "created_at": str(r["created_at"])
-            } for r in outgoing
-        ]
+                "created_at": str(r["created_at"]),
+            }
+            for r in outgoing
+        ],
     }
 
 
-def send_request(conn, requester_id: int, addressee_id: int):
+def send_request(conn, requester_id: int, addressee_id: int) -> Tuple[bool, str]:
+    """
+    Create a new pending friend request.
+
+    Validation rules:
+    - cannot friend yourself
+    - requester must exist
+    - addressee must exist
+    - cannot create duplicate relationship (PENDING or ACCEPTED), regardless of direction
+
+    Args:
+        conn: Active DB connection.
+        requester_id: User sending the request.
+        addressee_id: User receiving the request.
+
+    Returns:
+        (ok, message)
+        - ok=True if inserted successfully
+        - ok=False with error message if validation fails
+    """
     if requester_id == addressee_id:
         return (False, "Cannot friend yourself")
 
-    # Check user exists (optional but good)
+    # Validate both users exist
     with conn.cursor() as cur:
         cur.execute("SELECT user_id FROM users WHERE user_id=%s", (requester_id,))
         if cur.fetchone() is None:
@@ -75,7 +149,7 @@ def send_request(conn, requester_id: int, addressee_id: int):
         if cur.fetchone() is None:
             return (False, "Addressee not found")
 
-    # Check if relationship already exists in either direction
+    # Detect existing relationship in either direction
     exists_sql = """
                  SELECT id, status FROM friends
                  WHERE (requester_id=%s AND addressee_id=%s)
@@ -93,16 +167,31 @@ def send_request(conn, requester_id: int, addressee_id: int):
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO friends (requester_id, addressee_id, status) VALUES (%s, %s, 'PENDING')",
-                (requester_id, addressee_id)
+                (requester_id, addressee_id),
             )
         conn.commit()
         return (True, "Request sent")
     except pymysql.err.IntegrityError:
-        # covers unique friend pair constraint
+        # Covers unique pair constraint, if present in schema
         return (False, "Friend relationship already exists")
 
 
-def respond_request(conn, request_id: int, action: str):
+def respond_request(conn, request_id: int, action: str) -> Tuple[bool, str]:
+    """
+    Respond to a pending friend request.
+
+    Supported actions:
+    - "ACCEPT": marks the request as ACCEPTED and sets responded_at
+    - "DECLINE": deletes the pending request row (schema only supports PENDING/ACCEPTED)
+
+    Args:
+        conn: Active DB connection.
+        request_id: The friends.id row to respond to.
+        action: "ACCEPT" or "DECLINE" (case-insensitive).
+
+    Returns:
+        (ok, message)
+    """
     action = (action or "").upper()
     if action not in ("ACCEPT", "DECLINE"):
         return (False, "action must be ACCEPT or DECLINE")
@@ -111,7 +200,7 @@ def respond_request(conn, request_id: int, action: str):
         with conn.cursor() as cur:
             cur.execute(
                 "UPDATE friends SET status='ACCEPTED', responded_at=NOW() WHERE id=%s AND status='PENDING'",
-                (request_id,)
+                (request_id,),
             )
             updated = cur.rowcount
         conn.commit()
@@ -119,17 +208,30 @@ def respond_request(conn, request_id: int, action: str):
             return (False, "Request not found or not pending")
         return (True, "Request accepted")
 
-    # DECLINE => delete pending row
+    # DECLINE: remove pending request
     with conn.cursor() as cur:
         cur.execute("DELETE FROM friends WHERE id=%s AND status='PENDING'", (request_id,))
         deleted = cur.rowcount
     conn.commit()
+
     if deleted == 0:
         return (False, "Request not found or not pending")
     return (True, "Request declined")
 
 
-def remove_friend(conn, user_id: int, friend_id: int):
+def remove_friend(conn, user_id: int, friend_id: int) -> Tuple[bool, str]:
+    """
+    Remove an accepted friend relationship regardless of direction.
+
+    Args:
+        conn: Active DB connection.
+        user_id: One user.
+        friend_id: The other user to unfriend.
+
+    Returns:
+        (ok, message)
+        - ok=False if no accepted friendship row exists.
+    """
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -138,10 +240,11 @@ def remove_friend(conn, user_id: int, friend_id: int):
               AND ((requester_id=%s AND addressee_id=%s)
                 OR (requester_id=%s AND addressee_id=%s))
             """,
-            (user_id, friend_id, friend_id, user_id)
+            (user_id, friend_id, friend_id, user_id),
         )
         deleted = cur.rowcount
     conn.commit()
+
     if deleted == 0:
         return (False, "Friend relationship not found")
     return (True, "Friend removed")
