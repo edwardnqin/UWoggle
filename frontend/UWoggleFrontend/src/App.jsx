@@ -10,7 +10,7 @@ import EndScreen from "./pages/EndScreen";
 import Modal       from "./components/ui/Modal";
 import HudButton   from "./components/ui/HudButton";
 
-import { login, register, resendVerification } from "./services/api";
+import { login, register, logout, resendVerification } from "./services/api";
 
 const VIEWS = {
   home:    { title: null,       subtitle: null },
@@ -126,6 +126,15 @@ export default function App() {
     }
   }
 
+  async function handleLogout() {
+    setUser(null);  // Update UI immediately
+    try {
+      await logout();
+    } catch {
+      /* Already cleared UI; cookie may remain until next request */
+    }
+  }
+
   async function handleResendVerification() {
     setResendMsg("");
     try {
@@ -195,6 +204,7 @@ export default function App() {
             onSetTimerDuration={setTimerDuration}
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
+            onLogout={handleLogout}
             onFeedback={() => {
               setFbStatus(null);
               setFeedbackOpen(true);
