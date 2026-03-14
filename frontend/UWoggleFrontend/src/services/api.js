@@ -55,7 +55,10 @@ export async function register(username, email, password) {
  * Clears the HTTP-only JWT cookie server-side.
  */
 export async function logout() {
-  return request("/logout", { method: "POST" });
+  return request("/logout", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 /**

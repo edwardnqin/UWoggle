@@ -2,9 +2,10 @@ import { useState } from "react";
 import HudButton from "../components/ui/HudButton";
 import WinsBadge from "../components/ui/WinsBadge";
 import PlayIcon from "../components/ui/PlayIcon";
+import ProfileDropdown from "../components/ui/ProfileDropdown";
 import logoPng from "../assets/UWoggle.png";
 
-export default function Home({ onGo, onSetTimerDuration, onLogin, onSignup, onFeedback }) {
+export default function Home({ onGo, onSetTimerDuration, onLogin, onSignup, onFeedback, onLogout, user }) {
   const [singleplayerIsHovered, setSingleplayerIsHovered] = useState(false);
   const [timedModeIsHovered, setTimedModeIsHovered] = useState(false);
   
@@ -17,12 +18,18 @@ export default function Home({ onGo, onSetTimerDuration, onLogin, onSignup, onFe
           <HudButton variant="mini" onClick={onFeedback} ariaLabel="Open feedback">
             Feedback
           </HudButton>
-          <HudButton variant="mini" onClick={onLogin} ariaLabel="Open login">
-            Login
-          </HudButton>
-          <HudButton variant="mini" onClick={onSignup} ariaLabel="Open sign up">
-            Sign Up
-          </HudButton>
+          {user ? (
+            <ProfileDropdown user={user} onLogout={onLogout} />
+          ) : (
+            <>
+              <HudButton variant="mini" onClick={onLogin} ariaLabel="Open login">
+                Login
+              </HudButton>
+              <HudButton variant="mini" onClick={onSignup} ariaLabel="Open sign up">
+                Sign Up
+              </HudButton>
+            </>
+          )}
         </div>
       </div>
 

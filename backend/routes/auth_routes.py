@@ -10,6 +10,8 @@ Endpoints:
 """
 
 import logging
+import os
+
 from flask import Blueprint, request, jsonify, make_response
 from services.email_service import send_verification_email
 from services.token_service import generate_verification_token, verify_verification_token
@@ -240,5 +242,12 @@ def login():
 def logout():
     """Clear the JWT cookie to log the user out."""
     response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
-    response.delete_cookie("access_token")
+    # Must match set_cookie options (path, samesite, httponly, secure) or browser won't clear it
+    response.delete_cookie(
+        "access_token",
+        path="/",
+        samesite="Lax",
+        httponly=True,
+        secure=os.environ.get("FLASK_ENV") == "production",
+    )
     return response, 200
