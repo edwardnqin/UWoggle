@@ -1,39 +1,53 @@
 .playMain {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-    justify-content: center;
-    width: min(980px, 100%);
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+  width: min(980px, 100%);
+}
+
+.playBoard {
+  flex: 0 0 auto;
+}
+
+.foundWordsPanel {
+  flex: 0 0 260px;
+  max-height: 520px;
+  overflow: hidden;
+}
+
+.foundWordsList {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  column-width: 120px;
+  column-gap: 24px;
+}
+
+.foundWordsList li {
+  break-inside: avoid;
+  word-break: break-word;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 800px) {
+  .playMain {
+    flex-direction: column;
+    align-items: center;
   }
-  
-  .playBoard {
-    flex: 0 0 auto;
-  }
-  
+
   .foundWordsPanel {
-    flex: 0 0 260px;   /* right column width */
-    max-height: 520px; /* keep it from growing forever */
-    overflow: hidden;
+    width: min(520px, 100%);
+    flex-basis: auto;
   }
-  
+
   .foundWordsList {
-    max-height: 420px; /* scroll the list */
-    overflow: auto;
-    padding-right: 8px;
+    column-width: auto;
+    columns: 1;
   }
-  
-  /* mobile: stack vertically */
-  @media (max-width: 800px) {
-    .playMain {
-      flex-direction: column;
-      align-items: center;
-    }
-  
-    .foundWordsPanel {
-      width: min(520px, 100%);
-      flex-basis: auto;
-    }
-  }
+}
+
 .playSidebar {
   display: flex;
   flex-direction: column;
@@ -47,4 +61,77 @@
 
 .statsList li {
   margin-bottom: 10px;
+}
+
+
+.statsList__rules {
+  list-style: none;
+  margin-left: -18px;
+}
+
+.scoringLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.scoringLegend--compact {
+  gap: 8px;
+}
+
+.scoringLegend__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.scoringLegend__range {
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.scoringLegend__points {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.historyPanel {
+  width: min(920px, 100%);
+  max-height: 560px;
+}
+
+.historyListScroll {
+  max-height: 440px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.historyRecords {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historyRecordCard {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 16px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.94);
+  word-break: break-word;
+}
+
+.historyRecordCard strong {
+  color: rgba(255, 255, 255, 0.98);
 }

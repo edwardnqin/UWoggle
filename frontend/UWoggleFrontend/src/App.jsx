@@ -1,78 +1,73 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 
-import Home        from "./pages/Home";
+import Home from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
-import SingleUnlimited   from "./pages/SingleUnlimited";
+import SingleUnlimited from "./pages/SingleUnlimited";
 import SingleTimed from "./pages/SingleTimed";
 import EndScreen from "./pages/EndScreen";
+import History from "./pages/History";
 
-import Modal       from "./components/ui/Modal";
-import HudButton   from "./components/ui/HudButton";
+import Modal from "./components/ui/Modal";
+import HudButton from "./components/ui/HudButton";
 
 import { login, register, logout, resendVerification } from "./services/api";
 
 const VIEWS = {
-  home:    { title: null,       subtitle: null },
-  unlimited:    { title: null, subtitle: null},
-  timed: { title: null, subtitle: null},
-  end: { title: "GAME END", subtitle: "Here are the game stats:"},
-  online:  { title: "Online",   subtitle: "Matchmaking / lobby / invite-a-friend can live here." },
-  history: { title: "History",  subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
+  home: { title: null, subtitle: null },
+  unlimited: { title: null, subtitle: null },
+  timed: { title: null, subtitle: null },
+  end: { title: "GAME END", subtitle: "Here are the game stats:" },
+  online: { title: "Online", subtitle: "Matchmaking / lobby / invite-a-friend can live here." },
+  history: { title: "History", subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
 };
 
 export default function App() {
-  const [view,       setView]       = useState("home");
-  const [timerDuration, setTimerDuration] = useState(null); // if user chooses timed mode, set as timer duration.
+  const [view, setView] = useState("home");
+  const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
-  const [loginOpen,  setLoginOpen]  = useState(false);
+  const [guestHistory, setGuestHistory] = useState([]);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const [fbCategory, setFbCategory] = useState("suggestion");
   const [fbMessage, setFbMessage] = useState("");
   const [fbContact, setFbContact] = useState("");
-  const [fbStatus, setFbStatus] = useState(null); // null | "sending" | "sent" | "error"
+  const [fbStatus, setFbStatus] = useState(null);
 
-  // Logged-in user (null = guest)
   const [user, setUser] = useState(null);
 
-  // ── Email verification banner ─────────────────────────────────
-  const [verifyMsg,     setVerifyMsg]     = useState("");
+  const [verifyMsg, setVerifyMsg] = useState("");
   const [verifySuccess, setVerifySuccess] = useState(false);
 
-  // ── Login form state ─────────────────────────────────────────
-  const [loginEmail,    setLoginEmail]    = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [loginError,    setLoginError]    = useState("");
-  const [loginLoading,  setLoginLoading]  = useState(false);
-  const [showResend,    setShowResend]    = useState(false);
-  const [resendMsg,     setResendMsg]     = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resendMsg, setResendMsg] = useState("");
 
-  // ── Sign-up form state ───────────────────────────────────────
   const [suUsername, setSuUsername] = useState("");
-  const [suEmail,    setSuEmail]    = useState("");
+  const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
-  const [suError,    setSuError]    = useState("");
-  const [suSuccess,  setSuSuccess]  = useState("");
-  const [suLoading,  setSuLoading]  = useState(false);
+  const [suError, setSuError] = useState("");
+  const [suSuccess, setSuSuccess] = useState("");
+  const [suLoading, setSuLoading] = useState(false);
 
   const current = VIEWS[view];
 
-  // ── Email verification handler ───────────────────────────────
-  // Runs once on page load. If ?token= is in the URL, call /api/verify.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token  = params.get("token");
+    const token = params.get("token");
 
     if (!token) return;
 
-    // Clean the token from the URL without reloading the page
     window.history.replaceState({}, document.title, "/");
 
     fetch(`/api/verify?token=${encodeURIComponent(token)}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setVerifyMsg(data.message || data.error || "Verification complete.");
         setVerifySuccess(data.status === 200);
       })
@@ -82,24 +77,64 @@ export default function App() {
       });
   }, []);
 
-  // ── Helpers ──────────────────────────────────────────────────
-
   function closeLogin() {
     setLoginOpen(false);
-    setLoginEmail(""); setLoginPassword("");
-    setLoginError(""); setShowResend(false); setResendMsg("");
+    setLoginEmail("");
+    setLoginPassword("");
+    setLoginError("");
+    setShowResend(false);
+    setResendMsg("");
   }
 
   function closeSignup() {
     setSignupOpen(false);
-    setSuUsername(""); setSuEmail(""); setSuPassword("");
-    setSuError(""); setSuSuccess("");
+    setSuUsername("");
+    setSuEmail("");
+    setSuPassword("");
+    setSuError("");
+    setSuSuccess("");
   }
 
-  // ── Login handler ────────────────────────────────────────────
+  function addGuestHistoryRecord(stats) {
+    if (user || !stats) return;
+
+    setGuestHistory((prev) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        playedAt: new Date().toLocaleString(),
+        ...stats,
+      },
+      ...prev,
+    ]);
+  }
+
+  function finalizeGame(stats) {
+    setLastGameStats(stats);
+    addGuestHistoryRecord(stats);
+    setView("end");
+  }
+
+  function handleHistoryOpen() {
+    if (!user) {
+      window.alert(
+        "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
+      );
+    }
+    setView("history");
+  }
+
+  function handleMultiplayerOpen() {
+    if (!user) {
+      window.alert("Please create an account or log in to use Multiplayer.");
+      return;
+    }
+    setView("online");
+  }
 
   async function handleLogin() {
-    setLoginError(""); setShowResend(false); setResendMsg("");
+    setLoginError("");
+    setShowResend(false);
+    setResendMsg("");
 
     if (!loginEmail || !loginPassword) {
       setLoginError("Email and password are required.");
@@ -127,11 +162,11 @@ export default function App() {
   }
 
   async function handleLogout() {
-    setUser(null);  // Update UI immediately
+    setUser(null);
     try {
       await logout();
     } catch {
-      /* Already cleared UI; cookie may remain until next request */
+      // no-op
     }
   }
 
@@ -145,10 +180,9 @@ export default function App() {
     }
   }
 
-  // ── Sign-up handler ──────────────────────────────────────────
-
   async function handleSignup() {
-    setSuError(""); setSuSuccess("");
+    setSuError("");
+    setSuSuccess("");
 
     if (!suUsername || !suEmail || !suPassword) {
       setSuError("All fields are required.");
@@ -173,24 +207,34 @@ export default function App() {
     }
   }
 
-  // ── Render ───────────────────────────────────────────────────
-
   return (
     <div className="app">
-
-      {/* ── Email verification banner ──────────────────────── */}
       {verifyMsg && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
-          padding: "14px 24px", textAlign: "center", fontWeight: "bold",
-          background: verifySuccess ? "#27ae60" : "#c0392b",
-          color: "#fff",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            padding: "14px 24px",
+            textAlign: "center",
+            fontWeight: "bold",
+            background: verifySuccess ? "#27ae60" : "#c0392b",
+            color: "#fff",
+          }}
+        >
           {verifyMsg}
           <button
             onClick={() => setVerifyMsg("")}
-            style={{ marginLeft: 16, background: "none", border: "none",
-                     color: "#fff", cursor: "pointer", fontSize: 18 }}
+            style={{
+              marginLeft: 16,
+              background: "none",
+              border: "none",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: 18,
+            }}
           >
             ×
           </button>
@@ -201,6 +245,8 @@ export default function App() {
         {view === "home" ? (
           <Home
             onGo={setView}
+            onOpenHistory={handleHistoryOpen}
+            onOpenMultiplayer={handleMultiplayerOpen}
             onSetTimerDuration={setTimerDuration}
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
@@ -215,21 +261,15 @@ export default function App() {
           <SingleUnlimited
             title={current.title}
             subtitle={current.subtitle}
-            onGiveUp={() => setView("end")}
+            onGiveUp={finalizeGame}
           />
         ) : view === "timed" ? (
-          <SingleTimed 
+          <SingleTimed
             timerDuration={timerDuration}
             title={current.title}
             subtitle={current.subtitle}
-            onGiveUp={(stats) => {
-              setLastGameStats(stats);
-              setView("end");
-            }}
-            onTimeUp={(stats) => {
-              setLastGameStats(stats);
-              setView("end");
-            }}
+            onGiveUp={finalizeGame}
+            onTimeUp={finalizeGame}
           />
         ) : view === "end" ? (
           <EndScreen
@@ -238,16 +278,13 @@ export default function App() {
             gameStats={lastGameStats}
             onReturn={() => setView("home")}
           />
+        ) : view === "history" ? (
+          <History onBack={() => setView("home")} records={guestHistory} user={user} />
         ) : (
-          <Placeholder
-            title={current.title}
-            subtitle={current.subtitle}
-            onBack={() => setView("home")}
-          />
+          <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
         )}
       </div>
 
-      {/* ── Login Modal ───────────────────────────────────────── */}
       <Modal title="Login" open={loginOpen} onClose={closeLogin}>
         <div className="field">
           <label htmlFor="login-email">Email</label>
@@ -257,8 +294,8 @@ export default function App() {
             placeholder="team25@wisc.edu"
             autoComplete="email"
             value={loginEmail}
-            onChange={e => setLoginEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           />
         </div>
         <div className="field">
@@ -269,8 +306,8 @@ export default function App() {
             placeholder="••••••••"
             autoComplete="current-password"
             value={loginPassword}
-            onChange={e => setLoginPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
+            onChange={(e) => setLoginPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           />
         </div>
 
@@ -288,13 +325,12 @@ export default function App() {
           <HudButton variant="miniCancel" onClick={closeLogin}>
             Cancel
           </HudButton>
-          <HudButton variant="mini" onClick={handleLogin} disabled={loginLoading}>
+          <HudButton variant="mini" onClick={handleLogin}>
             {loginLoading ? "Logging in…" : "Login"}
           </HudButton>
         </div>
       </Modal>
 
-      {/* ── Sign-Up Modal ─────────────────────────────────────── */}
       <Modal title="Sign Up" open={signupOpen} onClose={closeSignup}>
         <div className="field">
           <label htmlFor="su-email">Email</label>
@@ -304,7 +340,7 @@ export default function App() {
             placeholder="you@wisc.edu"
             autoComplete="email"
             value={suEmail}
-            onChange={e => setSuEmail(e.target.value)}
+            onChange={(e) => setSuEmail(e.target.value)}
           />
         </div>
         <div className="field">
@@ -314,7 +350,7 @@ export default function App() {
             placeholder="badgerWords123"
             autoComplete="username"
             value={suUsername}
-            onChange={e => setSuUsername(e.target.value)}
+            onChange={(e) => setSuUsername(e.target.value)}
           />
         </div>
         <div className="field">
@@ -325,12 +361,12 @@ export default function App() {
             placeholder="••••••••"
             autoComplete="new-password"
             value={suPassword}
-            onChange={e => setSuPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSignup()}
+            onChange={(e) => setSuPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSignup()}
           />
         </div>
 
-        {suError   && <p className="formError">{suError}</p>}
+        {suError && <p className="formError">{suError}</p>}
         {suSuccess && <p className="formSuccess">{suSuccess}</p>}
 
         <div className="modalActions">
@@ -338,7 +374,7 @@ export default function App() {
             Cancel
           </HudButton>
           {!suSuccess && (
-            <HudButton variant="mini" onClick={handleSignup} disabled={suLoading}>
+            <HudButton variant="mini" onClick={handleSignup}>
               {suLoading ? "Creating…" : "Create"}
             </HudButton>
           )}
@@ -348,11 +384,7 @@ export default function App() {
       <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
         <div className="field">
           <label htmlFor="fb-category">Category</label>
-          <select
-            id="fb-category"
-            value={fbCategory}
-            onChange={(e) => setFbCategory(e.target.value)}
-          >
+          <select id="fb-category" value={fbCategory} onChange={(e) => setFbCategory(e.target.value)}>
             <option value="bug">Bug</option>
             <option value="suggestion">Suggestion</option>
             <option value="ui">UI/UX</option>

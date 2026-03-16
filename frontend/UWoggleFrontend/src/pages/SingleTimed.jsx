@@ -1,6 +1,8 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getWordScore } from "../utils/gameScoring";
+import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 function formatTime(totalSeconds) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -9,13 +11,7 @@ function formatTime(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function SingleTimed({
-  timerDuration,
-  title,
-  subtitle,
-  onGiveUp,
-  onTimeUp,
-}) {
+export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, onTimeUp }) {
   const initialSeconds = useMemo(() => {
     const minutes = Number(timerDuration);
     return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 : 300;
@@ -24,12 +20,16 @@ export default function SingleTimed({
   const [foundWords, setFoundWords] = useState([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  const [board, setBoard] = useState([]);
+  const [boardWordCount, setBoardWordCount] = useState(0);
   const finishedRef = useRef(false);
 
   useEffect(() => {
     setFoundWords([]);
     setScore(0);
     setTimeLeft(initialSeconds);
+    setBoard([]);
+    setBoardWordCount(0);
     finishedRef.current = false;
   }, [initialSeconds]);
 
@@ -43,6 +43,8 @@ export default function SingleTimed({
         totalWords: foundWords.length,
         timerDuration: Number(timerDuration) || 5,
         reason: "time_up",
+        board,
+        mode: "Timed",
       });
       return undefined;
     }
@@ -58,7 +60,7 @@ export default function SingleTimed({
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [timeLeft, score, foundWords, timerDuration, onTimeUp]);
+  }, [timeLeft, score, foundWords, timerDuration, onTimeUp, board]);
 
   const handleCommitWord = (word) => {
     if (finishedRef.current || timeLeft <= 0) return;
@@ -66,11 +68,35 @@ export default function SingleTimed({
     const w = word.toUpperCase().trim();
     if (w.length < 3) return;
 
+    const points = getWordScore(w);
+
     setFoundWords((prev) => {
       if (prev.includes(w)) return prev;
-      setScore((currentScore) => currentScore + 1);
-      return [...prev, w];
+
+      const nextWords = [...prev, w];
+      const nextScore = score + points;
+      setScore((currentScore) => currentScore + points);
+
+      if (boardWordCount > 0 && nextWords.length === boardWordCount) {
+        finishedRef.current = true;
+        onTimeUp?.({
+          score: nextScore,
+          foundWords: nextWords,
+          totalWords: nextWords.length,
+          timerDuration: Number(timerDuration) || 5,
+          reason: "all_words_found",
+          board,
+          mode: "Timed",
+        });
+      }
+
+      return nextWords;
     });
+  };
+
+  const handleBoardReady = ({ board: nextBoard, totalWords }) => {
+    setBoard(nextBoard);
+    setBoardWordCount(totalWords);
   };
 
   const handleGiveUp = () => {
@@ -82,6 +108,8 @@ export default function SingleTimed({
       totalWords: foundWords.length,
       timerDuration: Number(timerDuration) || 5,
       reason: "give_up",
+      board,
+      mode: "Timed",
     });
   };
 
@@ -95,7 +123,7 @@ export default function SingleTimed({
 
         <div className="playMain">
           <div className="playBoard">
-            <Grid onCommitWord={handleCommitWord} />
+            <Grid onCommitWord={handleCommitWord} onBoardReady={handleBoardReady} />
           </div>
 
           <div className="playSidebar">
@@ -111,14 +139,15 @@ export default function SingleTimed({
                 <li>
                   <strong>Words Found:</strong> {foundWords.length}
                 </li>
-                <li>
-                  <strong>Scoring Rule:</strong> 1 point per word
+                <li className="statsList__rules">
+                  <strong>Scoring Rule</strong>
+                  <ScoringRuleLegend compact />
                 </li>
               </ul>
             </div>
 
             <div className="hintCard foundWordsPanel">
-              <div className="hintTitle">Found Words</div>
+              <div className="hintTitle">Found Words ({foundWords.length})</div>
               {foundWords.length === 0 ? (
                 <div className="pageSubtitle">No words yet.</div>
               ) : (
