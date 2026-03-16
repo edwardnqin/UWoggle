@@ -1,26 +1,30 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useState } from "react";
+import { getWordScore } from "../utils/gameScoring";
+import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
-  const [maxScore, setMaxScore] = useState(0);
+  const [score, setScore] = useState(0);
+  const [board, setBoard] = useState([]);
 
-  const handleCommitWord = (word, points) => {
+  const handleCommitWord = (word) => {
     const w = word.toUpperCase().trim();
-    const p = Number(points) || 0;
-
     if (w.length < 3) return;
 
+    const points = getWordScore(w);
+
     setFoundWords((prev) => {
-      if (prev.some((entry) => entry.word === w)) return prev;
-      return [...prev, { word: w, points: p }];
+      if (prev.includes(w)) return prev;
+      setScore((currentScore) => currentScore + points);
+      return [...prev, w];
     });
   };
 
-  const totalScore = foundWords.reduce((sum, entry) => sum + entry.points, 0);
-
-  console.log("rendered maxScore:", maxScore);
+  const handleBoardReady = ({ board: nextBoard }) => {
+    setBoard(nextBoard);
+  };
 
   return (
     <div className="screen">
@@ -32,37 +36,60 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
 
         <div className="playMain">
           <div className="playBoard">
-            <Grid
-              onCommitWord={handleCommitWord}
-              onBoardLoaded={({ maxScore }) => {
-                console.log("callback maxScore:", maxScore);
-                setMaxScore(maxScore || 0);
-              }}
-            />
+            <Grid onCommitWord={handleCommitWord} onBoardReady={handleBoardReady} />
           </div>
 
-          <div className="hintCard foundWordsPanel">
-            <div className="hintTitle">
-              Scoreboard {totalScore}/{maxScore}
+          <div className="playSidebar">
+            <div className="hintCard scoreboardPanel">
+              <div className="hintTitle">Game Stats</div>
+              <ul className="hintList statsList">
+                <li>
+                  <strong>Mode:</strong> Unlimited
+                </li>
+                <li>
+                  <strong>Score:</strong> {score}
+                </li>
+                <li>
+                  <strong>Words Found:</strong> {foundWords.length}
+                </li>
+                <li className="statsList__rules">
+                  <strong>Scoring Rule</strong>
+                  <ScoringRuleLegend compact />
+                </li>
+              </ul>
             </div>
 
-            {foundWords.length === 0 ? (
-              <div className="pageSubtitle">No words yet.</div>
-            ) : (
-              <ul className="hintList foundWordsList">
-                {foundWords.map((entry) => (
-                  <li key={entry.word} className="scoreRow">
-                    <span>{entry.word}</span>
-                    <strong>+{entry.points}</strong>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="hintCard foundWordsPanel">
+              <div className="hintTitle">Found Words ({foundWords.length})</div>
+              {foundWords.length === 0 ? (
+                <div className="pageSubtitle">No words yet.</div>
+              ) : (
+                <ul className="hintList foundWordsList">
+                  {foundWords.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <HudButton className="btn--fit" onClick={onGiveUp} ariaLabel="Give up">
+      <HudButton
+        className="btn--fit"
+        onClick={() =>
+          onGiveUp?.({
+            score,
+            foundWords,
+            totalWords: foundWords.length,
+            timerDuration: null,
+            reason: "give_up",
+            board,
+            mode: "Unlimited",
+          })
+        }
+        ariaLabel="Give up"
+      >
         Give Up
       </HudButton>
     </div>
