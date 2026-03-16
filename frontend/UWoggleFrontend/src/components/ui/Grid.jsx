@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
-export default function Grid({ onCommitWord }) {
+export default function Grid({ onCommitWord, onBoardLoaded }) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
   const [status, setStatus] = useState("Loading board...");
@@ -14,25 +14,37 @@ export default function Grid({ onCommitWord }) {
     let cancelled = false;
 
     getBoard().then((res) => {
-      if (cancelled) return;
-
-      if (!res.ok || !res.data?.board) {
-        setStatus("Failed to load board.");
-        return;
-      }
-
-      const normalizedWords = Object.fromEntries(
-        Object.entries(res.data.words ?? {}).map(([word, points]) => [
-          word.toUpperCase(),
-          Number(points),
-        ])
-      );
-
-      setGrid(res.data.board);
-      setBoardWords(normalizedWords);
-      submittedWordsRef.current = new Set();
-      setStatus("Board ready.");
-    });
+        if (cancelled) return;
+      
+        console.log("FULL BOARD RESPONSE:", res);
+      
+        if (!res.ok || !res.data?.board) {
+          setStatus("Failed to load board.");
+          return;
+        }
+      
+        const normalizedWords = Object.fromEntries(
+          Object.entries(res.data.words ?? {}).map(([word, points]) => [
+            word.toUpperCase(),
+            Number(points),
+          ])
+        );
+      
+        const computedMaxScore =
+          Number(res.data.maxScore) ||
+          Object.values(normalizedWords).reduce((sum, pts) => sum + Number(pts || 0), 0);
+      
+        console.log("normalizedWords:", normalizedWords);
+        console.log("computedMaxScore:", computedMaxScore);
+      
+        setGrid(res.data.board);
+        setBoardWords(normalizedWords);
+        submittedWordsRef.current = new Set();
+      
+        onBoardLoaded?.({ maxScore: computedMaxScore });
+      
+        setStatus("Board ready.");
+      });
 
     return () => {
       cancelled = true;
