@@ -51,20 +51,44 @@ CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
 
 -- add table for board layout and max score
 CREATE TABLE IF NOT EXISTS games (
-    id           INT          AUTO_INCREMENT PRIMARY KEY,
-    user_id      INT          NULL,          -- nullable: existing INSERTs still work
-    board_layout VARCHAR(255) NOT NULL,
-    max_score    INT          NOT NULL,
-    final_score  INT          NULL,
-    found_words  TEXT         NULL,          -- kept: backend may still write here
-    completed    BOOLEAN      NOT NULL DEFAULT FALSE,
-    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at DATETIME     NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
-);
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    user_id           INT NULL,   -- legacy single-player compatibility
+    host_user_id      INT NULL,
+    guest_user_id     INT NULL,
+    mode              VARCHAR(30) NOT NULL DEFAULT 'singleplayer',
+    status            VARCHAR(30) NOT NULL DEFAULT 'WAITING',
+    timer_seconds     INT NOT NULL DEFAULT 180,
+    join_code         VARCHAR(20) NULL UNIQUE,
+    board_layout      VARCHAR(255) NOT NULL,
+    max_score         INT NOT NULL,
 
-CREATE INDEX idx_games_user_id   ON games (user_id, created_at DESC);
+    -- legacy single-player fields
+    final_score       INT NULL,
+    found_words       TEXT NULL,
+
+    -- real multiplayer 1v1 fields
+    host_score        INT NULL,
+    guest_score       INT NULL,
+    host_found_words  TEXT NULL,
+    guest_found_words TEXT NULL,
+    winner_user_id    INT NULL,
+
+    completed         BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at      DATETIME NULL,
+
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (host_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (guest_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (winner_user_id) REFERENCES users(user_id) ON DELETE SET NULL
+    );
+
+CREATE INDEX idx_games_user_id ON games (user_id, created_at DESC);
 CREATE INDEX idx_games_completed ON games (completed, completed_at DESC);
+CREATE INDEX idx_games_join_code ON games (join_code);
+CREATE INDEX idx_games_host_user_id ON games (host_user_id, created_at DESC);
+CREATE INDEX idx_games_guest_user_id ON games (guest_user_id, created_at DESC);
+CREATE INDEX idx_games_winner_user_id ON games (winner_user_id);
 
 -- Normalized word storage alongside found_words.
 -- Backend can write here for richer queries without touching

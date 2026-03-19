@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.CreateGameRequest;
 import com.example.demo.dto.SubmitScoreRequest;
 import com.example.demo.service.GameSessionService;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +18,21 @@ public class GameController {
     }
 
     @PostMapping
-    public Map<String, Object> createGame() {
-        return gameSessionService.createGame();
+    public Map<String, Object> createGame(@RequestBody CreateGameRequest request) {
+        return gameSessionService.createGame(request);
+    }
+
+    @PostMapping("/join/{joinCode}")
+    public Map<String, Object> joinGame(
+            @PathVariable String joinCode,
+            @RequestParam Long guestUserId
+    ) {
+        return gameSessionService.joinGame(joinCode, guestUserId);
+    }
+
+    @GetMapping("/{id}")
+    public Map<String, Object> getGame(@PathVariable Long id) {
+        return gameSessionService.getGame(id);
     }
 
     @PostMapping("/{id}/score")
