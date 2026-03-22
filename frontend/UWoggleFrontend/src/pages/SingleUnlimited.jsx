@@ -1,7 +1,6 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useState } from "react";
-import { getWordScore } from "../utils/gameScoring";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
@@ -9,17 +8,9 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [score, setScore] = useState(0);
   const [board, setBoard] = useState([]);
 
-  const handleCommitWord = (word) => {
-    const w = word.toUpperCase().trim();
-    if (w.length < 3) return;
-
-    const points = getWordScore(w);
-
-    setFoundWords((prev) => {
-      if (prev.includes(w)) return prev;
-      setScore((currentScore) => currentScore + points);
-      return [...prev, w];
-    });
+  const handleCommitWord = (word, points) => {
+    setScore((currentScore) => currentScore + points);
+    setFoundWords((prev) => [...prev, word]);
   };
 
   const handleBoardReady = ({ board: nextBoard }) => {
