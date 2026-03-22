@@ -6,24 +6,23 @@ function formatWords(words) {
   return words.join(", ");
 }
 
-function formatReason(reason, timerDuration) {
+function formatReason(reason) {
   if (reason === "all_words_found") return "All words found";
   if (reason === "time_up") return "Time ran out";
-  if (reason === "give_up") {
-    return timerDuration ? "Ended early" : "Ended by player";
-  }
+  if (reason === "give_up") return "Ended early";
+  
   return "Game ended";
 }
 
 function formatMode(timerDuration) {
-  return timerDuration ? `${timerDuration} minute timed game` : "Unlimited mode";
+  return timerDuration ? `${timerDuration} minute Timed game` : "Unlimited mode";
 }
 
 export default function EndScreen({ title, subtitle, onReturn, gameStats }) {
   const score = gameStats?.score ?? 0;
   const totalWords = gameStats?.totalWords ?? 0;
   const timerDuration = gameStats?.timerDuration ?? null;
-  const reason = formatReason(gameStats?.reason, timerDuration);
+  const reason = formatReason(gameStats?.reason);
   const foundWords = Array.isArray(gameStats?.foundWords) ? gameStats.foundWords : [];
 
   return (

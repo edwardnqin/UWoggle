@@ -1,7 +1,6 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getWordScore } from "../utils/gameScoring";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 function formatTime(totalSeconds) {
@@ -49,6 +48,19 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
       return undefined;
     }
 
+    if (boardWordCount > 0 && foundWords.length === boardWordCount) {
+      finishedRef.current = true;
+      onTimeUp?.({
+        score: score,
+        foundWords: foundWords,
+        totalWords: foundWords.length,
+        timerDuration: Number(timerDuration) || 5,
+        reason: "all_words_found",
+        board,
+        mode: "Timed",
+      });
+    }
+
     const timerId = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -60,38 +72,13 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [timeLeft, score, foundWords, timerDuration, onTimeUp, board]);
+  }, [timeLeft, score, foundWords, timerDuration, onTimeUp, board, boardWordCount]);
 
-  const handleCommitWord = (word) => {
+  const handleCommitWord = (word, points) => {
     if (finishedRef.current || timeLeft <= 0) return;
 
-    const w = word.toUpperCase().trim();
-    if (w.length < 3) return;
-
-    const points = getWordScore(w);
-
-    setFoundWords((prev) => {
-      if (prev.includes(w)) return prev;
-
-      const nextWords = [...prev, w];
-      const nextScore = score + points;
-      setScore((currentScore) => currentScore + points);
-
-      if (boardWordCount > 0 && nextWords.length === boardWordCount) {
-        finishedRef.current = true;
-        onTimeUp?.({
-          score: nextScore,
-          foundWords: nextWords,
-          totalWords: nextWords.length,
-          timerDuration: Number(timerDuration) || 5,
-          reason: "all_words_found",
-          board,
-          mode: "Timed",
-        });
-      }
-
-      return nextWords;
-    });
+    setFoundWords((prev) => [...prev, word]);
+    setScore((currentScore) => currentScore + points);
   };
 
   const handleBoardReady = ({ board: nextBoard, totalWords }) => {
