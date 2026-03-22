@@ -3,8 +3,7 @@ Quick unit tests for room_service.py
 Run with: pytest backend/tests/test_room_service.py -v
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 def make_conn(fetchone_returns=None, fetchall_returns=None, rowcount=1):
@@ -60,7 +59,7 @@ def test_join_room_not_waiting():
 
 
 def test_join_room_not_friends():
-    from services.room_service import join_room, _are_friends
+    from services.room_service import join_room
 
     conn, cur = make_conn(fetchone_returns=[
         {"id": 1, "host_user_id": 1, "status": "WAITING"},

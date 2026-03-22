@@ -1,0 +1,20 @@
+# PROJECT_25/backend/.gitlab-ci.yml
+
+.backend_base:
+  image: python:3.12
+  rules:
+    - changes:
+        - backend/**/*.py
+        - backend/requirements.txt
+        - backend/.gitlab-ci.yml
+        - .gitlab-ci.yml
+  before_script:
+    - python3 -m pip install --upgrade pip
+    - pip install ruff
+
+backend-lint:
+  extends: .backend_base
+  stage: lint
+  script:
+    - cd backend
+    - ruff check .

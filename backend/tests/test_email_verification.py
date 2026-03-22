@@ -15,7 +15,6 @@ from flask import Flask
 @pytest.fixture()
 def app():
     """Minimal Flask app for testing."""
-    from flask_sqlalchemy import SQLAlchemy
 
     application = Flask(__name__)
     application.config.update({

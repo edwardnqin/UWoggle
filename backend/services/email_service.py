@@ -12,14 +12,14 @@ Setup:
 import os
 import ssl
 import logging
-
-# Fix SSL certificate verification (CERTIFICATE_VERIFY_FAILED)
-# Python on macOS can fail to verify HTTPS; certifi provides a reliable CA bundle.
 import certifi
-ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+# Fix SSL certificate verification (CERTIFICATE_VERIFY_FAILED)
+# Python on macOS can fail to verify HTTPS; certifi provides a reliable CA bundle.
+ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 
 logger = logging.getLogger(__name__)
 
