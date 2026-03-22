@@ -1,6 +1,6 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
@@ -8,14 +8,14 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [score, setScore] = useState(0);
   const [board, setBoard] = useState([]);
 
-  const handleCommitWord = (word, points) => {
+  const handleCommitWord = useCallback((word, points) => {
     setScore((currentScore) => currentScore + points);
     setFoundWords((prev) => [...prev, word]);
-  };
+  }, []);
 
-  const handleBoardReady = ({ board: nextBoard }) => {
+  const handleBoardReady = useCallback(({ board: nextBoard }) => {
     setBoard(nextBoard);
-  };
+  }, []);
 
   return (
     <div className="screen">
