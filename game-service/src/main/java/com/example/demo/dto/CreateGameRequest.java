@@ -3,7 +3,7 @@ package com.example.demo.dto;
 public class CreateGameRequest {
     private String mode;
     private Integer timerSeconds;
-    private Long hostUserId;
+    private String hostName;
 
     public CreateGameRequest() {
     }
@@ -14,6 +14,6 @@ public class CreateGameRequest {
     public Integer getTimerSeconds() { return timerSeconds; }
     public void setTimerSeconds(Integer timerSeconds) { this.timerSeconds = timerSeconds; }
 
-    public Long getHostUserId() { return hostUserId; }
-    public void setHostUserId(Long hostUserId) { this.hostUserId = hostUserId; }
+    public String getHostName() { return hostName; }
+    public void setHostName(String hostName) { this.hostName = hostName; }
 }

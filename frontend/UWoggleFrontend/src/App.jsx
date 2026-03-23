@@ -12,6 +12,8 @@ import Modal from "./components/ui/Modal";
 import HudButton from "./components/ui/HudButton";
 
 import { login, register, logout, resendVerification } from "./services/api";
+import MultiplayerLobby from "./pages/MultiplayerLobby";
+import MultiplayerGame from "./pages/MultiplayerGame";
 
 const VIEWS = {
   home: { title: null, subtitle: null },
@@ -56,6 +58,14 @@ export default function App() {
   const [suLoading, setSuLoading] = useState(false);
 
   const current = VIEWS[view];
+  const [multiplayerGameId, setMultiplayerGameId] = useState(null);
+  const [multiplayerRole, setMultiplayerRole] = useState(null);
+
+  function enterMultiplayerGame(gameId, role) {
+    setMultiplayerGameId(gameId);
+    setMultiplayerRole(role);
+    setView("multiplayerGame");
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -124,10 +134,6 @@ export default function App() {
   }
 
   function handleMultiplayerOpen() {
-    if (!user) {
-      window.alert("Please create an account or log in to use Multiplayer.");
-      return;
-    }
     setView("online");
   }
 
@@ -280,8 +286,19 @@ export default function App() {
           />
         ) : view === "history" ? (
           <History onBack={() => setView("home")} records={guestHistory} user={user} />
+        ) : view === "online" ? (
+            <MultiplayerLobby
+                onBack={() => setView("home")}
+                onEnterGame={enterMultiplayerGame}
+            />
+        ) : view === "multiplayerGame" ? (
+            <MultiplayerGame
+                gameId={multiplayerGameId}
+                playerRole={multiplayerRole}
+                onBackToHome={() => setView("home")}
+            />
         ) : (
-          <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
+            <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
         )}
       </div>
 
