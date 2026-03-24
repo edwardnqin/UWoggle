@@ -22,7 +22,12 @@ from services.user_service import (
     mark_email_verified,
     check_password,
 )
-from services.auth_service import create_jwt, set_jwt_cookie
+from services.auth_service import (
+    create_jwt,
+    set_jwt_cookie,
+    clear_jwt_cookie,
+    get_current_user,
+)
 
 logger = logging.getLogger(__name__)
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
@@ -234,6 +239,28 @@ def login():
     set_jwt_cookie(response, token)
     return response, 200
 
+# ---------------------------------------------------------------------------
+# GET /api/me
+# ---------------------------------------------------------------------------
+@auth_bp.route("/me", methods=["GET"])
+def me():
+    """
+    Return the currently authenticated user based on the JWT cookie.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Not authenticated", "status": 401}), 401
+
+    return jsonify({
+        "user": {
+            "user_id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "high_score": user.high_score,
+            "number_of_games_played": user.number_of_games_played,
+        },
+        "status": 200,
+    }), 200
 
 # ---------------------------------------------------------------------------
 # POST /api/logout
@@ -242,12 +269,5 @@ def login():
 def logout():
     """Clear the JWT cookie to log the user out."""
     response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
-    # Must match set_cookie options (path, samesite, httponly, secure) or browser won't clear it
-    response.delete_cookie(
-        "access_token",
-        path="/",
-        samesite="Lax",
-        httponly=True,
-        secure=os.environ.get("FLASK_ENV") == "production",
-    )
+    clear_jwt_cookie(response)
     return response, 200
