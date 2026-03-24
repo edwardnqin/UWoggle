@@ -10,7 +10,6 @@ Endpoints:
 """
 
 import logging
-import os
 
 from flask import Blueprint, request, jsonify, make_response
 from services.email_service import send_verification_email
