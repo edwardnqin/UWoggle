@@ -1,22 +1,13 @@
 /**
  * api.js — Centralized API service for UWoggle.
- *
- * All fetch calls go through here so that:
- *  - The base URL is set in one place
- *  - credentials: "include" (JWT cookie) is never forgotten
- *  - Error handling is consistent across the app
- *
- * The Vite dev proxy (vite.config.js) forwards /api → http://localhost:5000,
- * so no hardcoded host is needed here.
  */
 
 const BASE = "/api";
 
-/** Thin wrapper that always sends/receives JSON with the auth cookie. */
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json", ...options.headers },
-    credentials: "include",          // send/receive the HTTP-only JWT cookie
+    credentials: "include",
     ...options,
   });
 
@@ -24,14 +15,6 @@ async function request(path, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
-// ---------------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------------
-
-/**
- * POST /api/login
- * @returns {{ ok, status, data }} — data.user on success
- */
 export async function login(email, password) {
   return request("/login", {
     method: "POST",
@@ -39,10 +22,6 @@ export async function login(email, password) {
   });
 }
 
-/**
- * POST /api/users  (register)
- * @returns {{ ok, status, data }}
- */
 export async function register(username, email, password) {
   return request("/users", {
     method: "POST",
@@ -50,10 +29,6 @@ export async function register(username, email, password) {
   });
 }
 
-/**
- * POST /api/logout
- * Clears the HTTP-only JWT cookie server-side.
- */
 export async function logout() {
   return request("/logout", {
     method: "POST",
@@ -61,9 +36,6 @@ export async function logout() {
   });
 }
 
-/**
- * POST /api/resend-verification
- */
 export async function resendVerification(email) {
   return request("/resend-verification", {
     method: "POST",
@@ -71,14 +43,21 @@ export async function resendVerification(email) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Game
-// ---------------------------------------------------------------------------
+export async function getCurrentUser() {
+  return request("/me");
+}
 
-/**
- * GET /api/board
- * Proxied by Flask → Java game-service.
- */
+export async function saveGameHistory(payload) {
+  return request("/games/history", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchGameHistory() {
+  return request("/games/history");
+}
+
 export async function getBoard() {
   return request("/board");
 }

@@ -23,7 +23,7 @@ function formatResult(reason, timerDuration) {
   return "Game ended";
 }
 
-export default function History({ onBack, records, user }) {
+export default function History({ onBack, records, user, loading, error }) {
   return (
     <div className="screen">
       <div className="topBar">
@@ -36,14 +36,22 @@ export default function History({ onBack, records, user }) {
         <div className="pageTitle">History</div>
         <div className="pageSubtitle">
           {user
-            ? "Your recent games"
+            ? "Your saved games across sessions"
             : "Guest history lasts only for this session and clears on refresh or exit."}
         </div>
 
         <div className="hintCard historyPanel">
           <div className="hintTitle">Recent Games</div>
 
-          {records.length === 0 ? (
+          {loading ? (
+            <ul className="hintList">
+              <li>Loading history...</li>
+            </ul>
+          ) : error ? (
+            <ul className="hintList">
+              <li>{error}</li>
+            </ul>
+          ) : records.length === 0 ? (
             <ul className="hintList">
               <li>No game history yet.</li>
               {!user ? <li>Play a game first, or log in to save history permanently.</li> : null}
@@ -58,7 +66,7 @@ export default function History({ onBack, records, user }) {
                     <div><strong>Mode:</strong> {formatMode(record)}</div>
                     <div><strong>Duration:</strong> {record.timerDuration ? `${record.timerDuration} min` : "Unlimited"}</div>
                     <div><strong>Score:</strong> {record.score ?? 0}</div>
-                    <div><strong>Words Found:</strong> {record.foundWords?.length ?? 0}</div>
+                    <div><strong>Words Found:</strong> {record.foundWords?.length ?? record.wordCount ?? 0}</div>
                     <div><strong>Board:</strong> {formatBoard(record.board)}</div>
                     <div><strong>Words:</strong> {formatWords(record.foundWords)}</div>
                   </div>
