@@ -5,7 +5,8 @@ JWT authentication service for UWoggle.
 import os
 import jwt
 from datetime import datetime, timezone, timedelta
-from flask import current_app
+from flask import current_app, request
+from services.user_service import get_user_by_id
 
 
 def create_jwt(user) -> str:
@@ -28,3 +29,21 @@ def set_jwt_cookie(response, token: str):
         samesite="Lax",
         max_age=7 * 24 * 60 * 60,
     )
+
+
+def get_current_user_from_request():
+    """Return the authenticated user for the current request, or None."""
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+
+    user_id = payload.get("user_id")
+    if not user_id:
+        return None
+
+    return get_user_by_id(user_id)
