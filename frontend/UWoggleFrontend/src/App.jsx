@@ -11,7 +11,7 @@ import History from "./pages/History";
 import Modal from "./components/ui/Modal";
 import HudButton from "./components/ui/HudButton";
 
-import { login, register, logout, resendVerification } from "./services/api";
+import { login, register, logout, resendVerification, getMe } from "./services/api";
 
 const VIEWS = {
   home: { title: null, subtitle: null },
@@ -38,6 +38,7 @@ export default function App() {
   const [fbStatus, setFbStatus] = useState(null);
 
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const [verifyMsg, setVerifyMsg] = useState("");
   const [verifySuccess, setVerifySuccess] = useState(false);
@@ -76,6 +77,25 @@ export default function App() {
         setVerifyMsg("Verification failed. Please try again.");
         setVerifySuccess(false);
       });
+  }, []);
+
+  useEffect(() => {
+    async function restoreUser() {
+      try {
+        const { ok, data } = await getMe();
+        if (ok && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+  
+    restoreUser();
   }, []);
 
   function closeLogin() {
@@ -217,6 +237,10 @@ export default function App() {
     } finally {
       setSuLoading(false);
     }
+  }
+
+  if (!authChecked) {
+    return <div className="app"></div>;
   }
 
   return (
