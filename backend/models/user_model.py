@@ -11,6 +11,7 @@ class User(db.Model):
     high_score = db.Column(db.Integer, default=0, nullable=False)
     number_of_games_played = db.Column(db.Integer, default=0, nullable=False)
     is_verified = db.Column(db.Boolean, default=False, nullable=False)
+    is_online = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc), nullable=False)

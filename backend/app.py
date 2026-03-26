@@ -73,6 +73,11 @@ def create_app():
     # --- Create database tables if they don't exist ---
     with app.app_context():
         db.create_all()
+        
+        # Reset all online statuses on server start
+        from models.user_model import User
+        db.session.query(User).update({"is_online": False})
+        db.session.commit()
 
     return app
 
