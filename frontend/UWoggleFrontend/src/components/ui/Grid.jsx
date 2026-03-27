@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
-export default function Grid({ onCommitWord, onBoardReady }) {
+function Grid({ onCommitWord, onBoardReady }) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
   const [status, setStatus] = useState("Loading board...");
@@ -31,14 +31,17 @@ export default function Grid({ onCommitWord, onBoardReady }) {
       setGrid(res.data.board);
       setBoardWords(normalizedWords);
       submittedWordsRef.current = new Set();
-      onBoardReady?.({ board: res.data.board, totalWords: Object.keys(normalizedWords).length });
+      onBoardReady?.({
+        board: res.data.board,
+        totalWords: Object.keys(normalizedWords).length,
+      });
       setStatus("Board ready.");
     });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onBoardReady]);
 
   // Wrap container (for outside-click detection + trail coordinate space)
   const boardRef = useRef(null);
@@ -57,9 +60,9 @@ export default function Grid({ onCommitWord, onBoardReady }) {
   // mode: null | "click" | "drag"
   const [mode, setMode] = useState(null);
   const modeRef = useRef(null);
-  const setModeBoth = (m) => {
-    modeRef.current = m;
-    setMode(m);
+  const setModeBoth = (nextMode) => {
+    modeRef.current = nextMode;
+    setMode(nextMode);
   };
 
   // pointer tracking
@@ -117,34 +120,38 @@ export default function Grid({ onCommitWord, onBoardReady }) {
   };
 
   const commit = () => {
-    const p = pathRef.current;
-    if (p.length === 0) return;
+    const currentPath = pathRef.current;
+    if (currentPath.length === 0) return;
 
-    const w = p.map((x) => x.letter).join("").toUpperCase().trim();
+    const word = currentPath
+      .map((cell) => cell.letter)
+      .join("")
+      .toUpperCase()
+      .trim();
 
     setPathBoth([]);
     setModeBoth(null);
     setPointerPos(null);
 
-    if (w.length < 3) {
-      setStatus(`"${w}" is too short.`);
+    if (word.length < 3) {
+      setStatus(`"${word}" is too short.`);
       return;
     }
 
-    if (submittedWordsRef.current.has(w)) {
-      setStatus(`"${w}" was already found.`);
+    if (submittedWordsRef.current.has(word)) {
+      setStatus(`"${word}" was already found.`);
       return;
     }
 
-    const points = boardWords[w];
+    const points = boardWords[word];
     if (!points) {
-      setStatus(`"${w}" is not a valid word on this board.`);
+      setStatus(`"${word}" is not a valid word on this board.`);
       return;
     }
 
-    submittedWordsRef.current.add(w);
-    setStatus(`Accepted: "${w}" (+${points})`);
-    onCommitWord?.(w, points);
+    submittedWordsRef.current.add(word);
+    setStatus(`Accepted: "${word}" (+${points})`);
+    onCommitWord?.(word, points);
   };
 
   // Start tracking pointer down on a cell (do NOT auto-commit)
@@ -155,19 +162,19 @@ export default function Grid({ onCommitWord, onBoardReady }) {
     startCellRef.current = { r, c };
     lastHoverRef.current = { r, c };
 
-    // initialize pointer pos for live trail
     const rect = boardRef.current?.getBoundingClientRect();
-    if (rect) setPointerPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    if (rect) {
+      setPointerPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
   };
 
   // Global move/up listeners so dragging across cells is reliable
   useEffect(() => {
-    if (!grid) return;
+    if (!grid) return undefined;
 
     const handleMove = (e) => {
       if (!pointerDownRef.current) return;
 
-      // update live pointer position (throttled by rAF)
       const rect = boardRef.current?.getBoundingClientRect();
       if (rect) {
         const nextPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -198,7 +205,6 @@ export default function Grid({ onCommitWord, onBoardReady }) {
       if (!dragStartedRef.current && (r !== start.r || c !== start.c)) {
         dragStartedRef.current = true;
         setModeBoth("drag");
-        // Drag starts a fresh word from the start cell
         setPathBoth([makeCell(start.r, start.c)]);
       }
 
@@ -247,28 +253,31 @@ export default function Grid({ onCommitWord, onBoardReady }) {
       if (modeRef.current !== "click") return;
       if (pathRef.current.length === 0) return;
 
-      const board = boardRef.current;
-      if (board && !board.contains(e.target)) {
+      const boardElement = boardRef.current;
+      if (boardElement && !boardElement.contains(e.target)) {
         commit();
       }
     };
 
     document.addEventListener("pointerdown", handleDocPointerDown, true);
-    return () => document.removeEventListener("pointerdown", handleDocPointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handleDocPointerDown, true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardWords]);
 
   // Compute trail points whenever path changes (measure centers)
   useLayoutEffect(() => {
-    const board = boardRef.current;
-    if (!board) return;
+    const boardElement = boardRef.current;
+    if (!boardElement) return;
 
-    const boardRect = board.getBoundingClientRect();
+    const boardRect = boardElement.getBoundingClientRect();
 
-    const pts = path
+    const points = path
       .map(({ r, c }) => {
         const el = cellRefs.current?.[r]?.[c];
         if (!el) return null;
+
         const rect = el.getBoundingClientRect();
         return {
           x: rect.left + rect.width / 2 - boardRect.left,
@@ -277,7 +286,7 @@ export default function Grid({ onCommitWord, onBoardReady }) {
       })
       .filter(Boolean);
 
-    setTrailPoints(pts);
+    setTrailPoints(points);
   }, [path]);
 
   if (!grid) {
@@ -302,7 +311,6 @@ export default function Grid({ onCommitWord, onBoardReady }) {
   const word = path.map((p) => p.letter).join("");
   const isInPath = (r, c) => path.some((p) => p.r === r && p.c === c);
 
-  // Build SVG polyline string
   const effectivePoints =
     mode === "drag" && pointerPos && trailPoints.length > 0
       ? [...trailPoints, pointerPos]
@@ -355,3 +363,5 @@ export default function Grid({ onCommitWord, onBoardReady }) {
     </div>
   );
 }
+
+export default React.memo(Grid);

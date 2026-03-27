@@ -1,7 +1,6 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { getWordScore } from "../utils/gameScoring";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 function formatTime(totalSeconds) {
@@ -25,16 +24,8 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    setFoundWords([]);
-    setScore(0);
-    setTimeLeft(initialSeconds);
-    setBoard([]);
-    setBoardWordCount(0);
-    finishedRef.current = false;
-  }, [initialSeconds]);
-
-  useEffect(() => {
     if (finishedRef.current) return undefined;
+
     if (timeLeft <= 0) {
       finishedRef.current = true;
       onTimeUp?.({
@@ -43,6 +34,20 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
         totalWords: foundWords.length,
         timerDuration: Number(timerDuration) || 5,
         reason: "time_up",
+        board,
+        mode: "Timed",
+      });
+      return undefined;
+    }
+
+    if (boardWordCount > 0 && foundWords.length === boardWordCount) {
+      finishedRef.current = true;
+      onTimeUp?.({
+        score,
+        foundWords,
+        totalWords: foundWords.length,
+        timerDuration: Number(timerDuration) || 5,
+        reason: "all_words_found",
         board,
         mode: "Timed",
       });
@@ -60,44 +65,22 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [timeLeft, score, foundWords, timerDuration, onTimeUp, board]);
+  }, [timeLeft, score, foundWords, timerDuration, onTimeUp, board, boardWordCount]);
 
-  const handleCommitWord = (word) => {
-    if (finishedRef.current || timeLeft <= 0) return;
+  const handleCommitWord = useCallback(
+    (word, points) => {
+      if (finishedRef.current || timeLeft <= 0) return;
 
-    const w = word.toUpperCase().trim();
-    if (w.length < 3) return;
-
-    const points = getWordScore(w);
-
-    setFoundWords((prev) => {
-      if (prev.includes(w)) return prev;
-
-      const nextWords = [...prev, w];
-      const nextScore = score + points;
+      setFoundWords((prev) => [...prev, word]);
       setScore((currentScore) => currentScore + points);
+    },
+    [timeLeft]
+  );
 
-      if (boardWordCount > 0 && nextWords.length === boardWordCount) {
-        finishedRef.current = true;
-        onTimeUp?.({
-          score: nextScore,
-          foundWords: nextWords,
-          totalWords: nextWords.length,
-          timerDuration: Number(timerDuration) || 5,
-          reason: "all_words_found",
-          board,
-          mode: "Timed",
-        });
-      }
-
-      return nextWords;
-    });
-  };
-
-  const handleBoardReady = ({ board: nextBoard, totalWords }) => {
+  const handleBoardReady = useCallback(({ board: nextBoard, totalWords }) => {
     setBoard(nextBoard);
     setBoardWordCount(totalWords);
-  };
+  }, []);
 
   const handleGiveUp = () => {
     if (finishedRef.current) return;

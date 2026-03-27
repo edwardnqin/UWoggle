@@ -22,12 +22,13 @@ def create_jwt(user) -> str:
 def set_jwt_cookie(response, token: str):
     """Store the JWT in an HTTP-only cookie."""
     response.set_cookie(
-        "access_token",
+        COOKIE_NAME,
         token,
         httponly=True,
         secure=os.environ.get("FLASK_ENV") == "production",
         samesite="Lax",
-        max_age=7 * 24 * 60 * 60,
+        max_age=TOKEN_MAX_AGE,
+        path="/",
     )
 
 

@@ -1,0 +1,14 @@
+# PROJECT_25/.gitlab-ci.yml
+
+include:
+  - local: '/frontend/.gitlab-ci.yml'
+  - local: '/backend/.gitlab-ci.yml'
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - when: never
+
+stages:
+  - lint
