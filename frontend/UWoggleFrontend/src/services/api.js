@@ -71,6 +71,16 @@ export async function resendVerification(email) {
   });
 }
 
+/**
+ * GET /api/me
+ * Returns the currently logged-in user from the auth cookie.
+ */
+export async function getMe() {
+  return request("/me", {
+    method: "GET",
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------

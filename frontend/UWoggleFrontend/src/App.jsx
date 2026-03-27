@@ -28,6 +28,7 @@ export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
+  const [userHistory, setUserHistory] = useState([]);
   const [guestHistory, setGuestHistory] = useState([]);
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
@@ -39,6 +40,7 @@ export default function App() {
   const [fbStatus, setFbStatus] = useState(null);
 
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const [verifyMsg, setVerifyMsg] = useState("");
   const [verifySuccess, setVerifySuccess] = useState(false);
@@ -87,6 +89,25 @@ export default function App() {
       });
   }, []);
 
+  useEffect(() => {
+    async function restoreUser() {
+      try {
+        const { ok, data } = await getMe();
+        if (ok && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+  
+    restoreUser();
+  }, []);
+
   function closeLogin() {
     setLoginOpen(false);
     setLoginEmail("");
@@ -105,22 +126,33 @@ export default function App() {
     setSuSuccess("");
   }
 
-  function addGuestHistoryRecord(stats) {
-    if (user || !stats) return;
+  function addHistoryRecord(stats) {
+    if (!stats) return;
 
-    setGuestHistory((prev) => [
-      {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        playedAt: new Date().toLocaleString(),
-        ...stats,
-      },
-      ...prev,
-    ]);
+    if (!user) {
+      setGuestHistory((prev) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          playedAt: new Date().toLocaleString(),
+          ...stats,
+        },
+        ...prev,
+      ]);
+    } else {
+      setUserHistory((prev) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          playedAt: new Date().toLocaleString(),
+          ...stats,
+        },
+        ...prev,
+      ]);
+    }
   }
 
   function finalizeGame(stats) {
     setLastGameStats(stats);
-    addGuestHistoryRecord(stats);
+    addHistoryRecord(stats);
     setView("end");
   }
 
@@ -211,6 +243,10 @@ export default function App() {
     } finally {
       setSuLoading(false);
     }
+  }
+
+  if (!authChecked) {
+    return <div className="app"></div>;
   }
 
   return (

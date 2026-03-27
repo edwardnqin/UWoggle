@@ -20,7 +20,7 @@ Tables used:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple
 import pymysql
 
 
