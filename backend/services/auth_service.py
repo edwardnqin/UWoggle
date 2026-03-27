@@ -8,6 +8,8 @@ from datetime import datetime, timezone, timedelta
 from flask import current_app, request
 from services.user_service import get_user_by_id
 
+COOKIE_NAME = "access_token"
+TOKEN_MAX_AGE = 7 * 24 * 60 * 60  # 7 days
 
 def create_jwt(user) -> str:
     """Create a signed JWT token for the given user."""
@@ -29,6 +31,16 @@ def set_jwt_cookie(response, token: str):
         samesite="Lax",
         max_age=TOKEN_MAX_AGE,
         path="/",
+    )
+
+def clear_jwt_cookie(response):
+    """Clear the auth cookie."""
+    response.delete_cookie(
+        COOKIE_NAME,
+        path="/",
+        samesite="Lax",
+        httponly=True,
+        secure=os.environ.get("FLASK_ENV") == "production",
     )
 
 
