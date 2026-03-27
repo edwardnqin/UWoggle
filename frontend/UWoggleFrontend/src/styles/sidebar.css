@@ -1,0 +1,132 @@
+.friendSidebar__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    padding: 0;
+    margin: 0;
+    z-index: 90;
+    cursor: default;
+  }
+  
+  .friendSidebar {
+    position: fixed;
+    top: 12px;
+    right: 0;
+    width: min(380px, 92vw);
+    height: calc(100vh - 24px);
+    padding: 1.25rem;
+    box-sizing: border-box;
+    background: rgba(20, 24, 35, 0.96);
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: friendSidebarSlideIn 0.2s ease-out;
+    color: white;
+  
+    border-radius: 16px 0 0 16px;
+  }
+  
+  @keyframes friendSidebarSlideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  .friendSidebar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .friendSidebar__username {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  
+  .friendSidebar__id {
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+    opacity: 0.75;
+  }
+  
+  .friendSidebar__close {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  
+  .friendSidebar__tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .friendSidebar__tab {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid rgba(220, 214, 214, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  
+  .friendSidebar__tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .friendSidebar__tab--active {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+  
+  .friendSidebar__content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  
+  .friendSidebar__panel {
+    padding: 0.25rem 0.1rem;
+  }
+  
+  .friendSidebar__sectionTitle {
+    margin: 0 0 0.6rem 0;
+    font-size: 1rem;
+  }
+  
+  .friendSidebar__placeholder {
+    margin: 0;
+    opacity: 0.8;
+    line-height: 1.45;
+  }
+  
+  .friendSidebar__footer {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .friendSidebar__logout {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+  }

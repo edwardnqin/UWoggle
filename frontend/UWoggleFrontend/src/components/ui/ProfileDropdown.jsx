@@ -1,59 +1,182 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const CLOSE_ANIMATION_MS = 0;
 
 export default function ProfileDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [activeView, setActiveView] = useState("friends");
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
+    function handleKeyDown(e) {
+      if (e.key === "Escape") {
+        closeSidebar();
       }
     }
+
     if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
+  function openSidebar() {
+    setIsClosing(false);
+    setOpen(true);
+  }
+
+  function closeSidebar() {
+    setIsClosing(true);
+
+    setTimeout(() => {
+      setOpen(false);
+      setIsClosing(false);
+    }, CLOSE_ANIMATION_MS);
+  }
+
+  const username = user?.username || user?.email || "User";
+  const userId = user?.user_id ?? "—";
+
+  function renderContent() {
+    if (activeView === "friends") {
+      return (
+        <div className="friendSidebar__panel">
+          <h3 className="friendSidebar__sectionTitle">Friends</h3>
+          <p className="friendSidebar__placeholder">
+            Friends list template goes here.
+          </p>
+        </div>
+      );
+    }
+
+    if (activeView === "requests") {
+      return (
+        <div className="friendSidebar__panel">
+          <h3 className="friendSidebar__sectionTitle">Friend Requests</h3>
+          <p className="friendSidebar__placeholder">
+            Friend requests template goes here.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="friendSidebar__panel">
+        <h3 className="friendSidebar__sectionTitle">Game Invites</h3>
+        <p className="friendSidebar__placeholder">
+          Game invites template goes here.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="profileDropdown" ref={ref}>
-      <button
-        type="button"
-        className="profileDropdown__trigger"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        aria-label="Profile menu"
-      >
-        <svg
-          className="profileDropdown__icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <>
+      <div className="profileDropdown">
+        <button
+          type="button"
+          className="profileDropdown__trigger"
+          onClick={openSidebar}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-label="Open profile sidebar"
         >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-        </svg>
-      </button>
+          <svg
+            className="profileDropdown__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+          </svg>
+        </button>
+      </div>
+
       {open && (
-        <div className="profileDropdown__menu">
-          <div className="profileDropdown__user">{user?.username || user?.email}</div>
+        <>
           <button
             type="button"
-            className="profileDropdown__item"
-            onClick={() => {
-              onLogout();
-              setOpen(false);
-            }}
+            className={`friendSidebar__backdrop ${isClosing ? "friendSidebar__backdrop--closing" : ""}`}
+            aria-label="Close profile sidebar"
+            onClick={closeSidebar}
+          />
+
+          <aside
+            className={`friendSidebar ${isClosing ? "friendSidebar--closing" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="friendSidebarTitle"
           >
-            Logout
-          </button>
-        </div>
+            <div className="friendSidebar__header">
+              <div>
+                <div id="friendSidebarTitle" className="friendSidebar__username">
+                  {username}
+                </div>
+                <div className="friendSidebar__id">ID: {userId}</div>
+              </div>
+
+              <button
+                type="button"
+                className="friendSidebar__close"
+                aria-label="Close sidebar"
+                onClick={closeSidebar}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="friendSidebar__tabs">
+              <button
+                type="button"
+                className={`friendSidebar__tab ${activeView === "friends" ? "friendSidebar__tab--active" : ""}`}
+                onClick={() => setActiveView("friends")}
+              >
+                Friends
+              </button>
+
+              <button
+                type="button"
+                className={`friendSidebar__tab ${activeView === "requests" ? "friendSidebar__tab--active" : ""}`}
+                onClick={() => setActiveView("requests")}
+              >
+                Requests
+              </button>
+
+              <button
+                type="button"
+                className={`friendSidebar__tab ${activeView === "invites" ? "friendSidebar__tab--active" : ""}`}
+                onClick={() => setActiveView("invites")}
+              >
+                Invites
+              </button>
+            </div>
+
+            <div className="friendSidebar__content">{renderContent()}</div>
+
+            <div className="friendSidebar__footer">
+              <button
+                type="button"
+                className="friendSidebar__logout"
+                onClick={() => {
+                  onLogout();
+                  closeSidebar();
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </aside>
+        </>
       )}
-    </div>
+    </>
   );
 }
