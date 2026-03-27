@@ -18,9 +18,8 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     const [foundWords, setFoundWords] = useState([]);
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(null);
-    const [statusMsg, setStatusMsg] = useState("Loading multiplayer game...");
     const [submitted, setSubmitted] = useState(false);
-    const [polling, setPolling] = useState(true);
+    const [manualStatusMsg, setManualStatusMsg] = useState(null);
 
     const finishedRef = useRef(false);
 
@@ -30,45 +29,91 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         try {
             const { ok, data } = await getGameSession(gameId);
             if (!ok) {
-                setStatusMsg(data.error || "Failed to load multiplayer game.");
+                setManualStatusMsg(data.error || "Failed to load multiplayer game.");
                 return;
             }
 
             setSession(data);
-
-            if (timeLeft === null && data.timerSeconds != null) {
-                setTimeLeft(data.timerSeconds);
-            }
+            setTimeLeft((prev) => (prev === null && data.timerSeconds != null ? data.timerSeconds : prev));
         } catch {
-            setStatusMsg("Could not reach the game service.");
+            setManualStatusMsg("Could not reach the game service.");
         }
-    }, [gameId, timeLeft]);
+    }, [gameId]);
+
+    const handleSubmitScore = useCallback(async () => {
+        if (submitted || !gameId || !playerRole) return;
+
+        try {
+            setManualStatusMsg("Submitting score...");
+            const { ok, data } = await submitMultiplayerScore(
+                gameId,
+                playerRole,
+                score,
+                foundWords
+            );
+
+            if (!ok) {
+                setManualStatusMsg(data.error || "Failed to submit score.");
+                return;
+            }
+
+            setSubmitted(true);
+            setManualStatusMsg("Score submitted. Waiting for other player...");
+            await loadSession();
+        } catch {
+            setManualStatusMsg("Could not submit score.");
+        }
+    }, [submitted, gameId, playerRole, score, foundWords, loadSession]);
 
     useEffect(() => {
-        loadSession();
+        const id = window.setTimeout(() => {
+            void loadSession();
+        }, 0);
+
+        return () => window.clearTimeout(id);
     }, [loadSession]);
 
     useEffect(() => {
-        if (!polling || !gameId) return;
+        if (!gameId || session?.completed) return;
 
         const id = window.setInterval(() => {
-            loadSession();
+            void loadSession();
         }, 3000);
 
         return () => window.clearInterval(id);
-    }, [polling, gameId, loadSession]);
+    }, [gameId, session?.completed, loadSession]);
 
     useEffect(() => {
-        if (!session) return;
+        if (!session || finishedRef.current) return;
+        if (timeLeft === null) return;
+        if (session.status !== "ACTIVE") return;
+        if (session.completed) return;
 
-        if (session.status === "WAITING") {
-            setStatusMsg("Waiting for player 2 to join...");
-        } else if (session.status === "ACTIVE") {
-            setStatusMsg("Game started. Find words!");
-        } else if (session.status === "FINISHED") {
-            setStatusMsg("Game finished.");
+        const timerId = window.setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev === null) return prev;
+
+                if (prev <= 1) {
+                    window.clearInterval(timerId);
+                    finishedRef.current = true;
+                    window.setTimeout(() => {
+                        void handleSubmitScore();
+                    }, 0);
+                    return 0;
+                }
+
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => window.clearInterval(timerId);
+    }, [session, timeLeft, handleSubmitScore]);
+
+    useEffect(() => {
+        if (session?.completed) {
+            finishedRef.current = true;
         }
-    }, [session]);
+    }, [session?.completed]);
 
     const handleCommitWord = useCallback(
         (word, points) => {
@@ -79,61 +124,14 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         [submitted, session?.completed]
     );
 
-    const handleSubmitScore = useCallback(async () => {
-        if (submitted || !gameId || !playerRole) return;
-
-        try {
-            setStatusMsg("Submitting score...");
-            const { ok, data } = await submitMultiplayerScore(
-                gameId,
-                playerRole,
-                score,
-                foundWords
-            );
-
-            if (!ok) {
-                setStatusMsg(data.error || "Failed to submit score.");
-                return;
-            }
-
-            setSubmitted(true);
-            setStatusMsg("Score submitted. Waiting for other player...");
-            await loadSession();
-        } catch {
-            setStatusMsg("Could not submit score.");
-        }
-    }, [submitted, gameId, playerRole, score, foundWords, loadSession]);
-
-    useEffect(() => {
-        if (!session || finishedRef.current) return;
-        if (timeLeft === null) return;
-
-        if (session.status !== "ACTIVE") return;
-
-        if (timeLeft <= 0) {
-            finishedRef.current = true;
-            handleSubmitScore();
-            return;
-        }
-
-        const timerId = window.setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    window.clearInterval(timerId);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => window.clearInterval(timerId);
-    }, [timeLeft, session, handleSubmitScore]);
-
-    useEffect(() => {
-        if (!session?.completed) return;
-        setPolling(false);
-        finishedRef.current = true;
-    }, [session?.completed]);
+    const statusMsg = useMemo(() => {
+        if (manualStatusMsg) return manualStatusMsg;
+        if (!session) return "Loading multiplayer game...";
+        if (session.status === "WAITING") return "Waiting for player 2 to join...";
+        if (session.status === "ACTIVE") return "Game started. Find words!";
+        if (session.status === "FINISHED") return "Game finished.";
+        return "Loading multiplayer game...";
+    }, [manualStatusMsg, session]);
 
     const winnerText = useMemo(() => {
         if (!session?.completed) return null;
