@@ -70,38 +70,6 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         }
     }, [session]);
 
-    useEffect(() => {
-        if (!session || finishedRef.current) return;
-        if (timeLeft === null) return;
-
-        // Don't start timer until both players are present
-        if (session.status !== "ACTIVE") return;
-
-        if (timeLeft <= 0) {
-            finishedRef.current = true;
-            handleSubmitScore();
-            return;
-        }
-
-        const timerId = window.setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    window.clearInterval(timerId);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => window.clearInterval(timerId);
-    }, [timeLeft, session]);
-
-    useEffect(() => {
-        if (!session?.completed) return;
-        setPolling(false);
-        finishedRef.current = true;
-    }, [session?.completed]);
-
     const handleCommitWord = useCallback(
         (word, points) => {
             if (submitted || session?.completed) return;
@@ -111,7 +79,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         [submitted, session?.completed]
     );
 
-    async function handleSubmitScore() {
+    const handleSubmitScore = useCallback(async () => {
         if (submitted || !gameId || !playerRole) return;
 
         try {
@@ -134,7 +102,38 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         } catch {
             setStatusMsg("Could not submit score.");
         }
-    }
+    }, [submitted, gameId, playerRole, score, foundWords, loadSession]);
+
+    useEffect(() => {
+        if (!session || finishedRef.current) return;
+        if (timeLeft === null) return;
+
+        if (session.status !== "ACTIVE") return;
+
+        if (timeLeft <= 0) {
+            finishedRef.current = true;
+            handleSubmitScore();
+            return;
+        }
+
+        const timerId = window.setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    window.clearInterval(timerId);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => window.clearInterval(timerId);
+    }, [timeLeft, session, handleSubmitScore]);
+
+    useEffect(() => {
+        if (!session?.completed) return;
+        setPolling(false);
+        finishedRef.current = true;
+    }, [session?.completed]);
 
     const winnerText = useMemo(() => {
         if (!session?.completed) return null;
@@ -189,8 +188,8 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
                             <ul className="hintList statsList">
                                 <li><strong>Your Role:</strong> {playerRole}</li>
                                 <li><strong>Status:</strong> {session.status}</li>
-                                <li><strong>Join Code:</strong> {session.joinCode}</li>
                                 <li><strong>Game ID:</strong> {session.gameId}</li>
+                                <li><strong>Join Code:</strong> {session.joinCode}</li>
                                 <li><strong>Time Left:</strong> {formatTime(timeLeft ?? session.timerSeconds ?? 0)}</li>
                                 <li><strong>Your Score:</strong> {score}</li>
                                 <li><strong>Your Words:</strong> {foundWords.length}</li>
