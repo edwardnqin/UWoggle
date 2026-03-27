@@ -59,9 +59,10 @@ export default function App() {
   const [suSuccess, setSuSuccess] = useState("");
   const [suLoading, setSuLoading] = useState(false);
 
-  const current = VIEWS[view];
   const [multiplayerGameId, setMultiplayerGameId] = useState(null);
   const [multiplayerRole, setMultiplayerRole] = useState(null);
+
+  const current = VIEWS[view];
 
   function enterMultiplayerGame(gameId, role) {
     setMultiplayerGameId(gameId);
@@ -78,15 +79,15 @@ export default function App() {
     window.history.replaceState({}, document.title, "/");
 
     fetch(`/api/verify?token=${encodeURIComponent(token)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setVerifyMsg(data.message || data.error || "Verification complete.");
-        setVerifySuccess(data.status === 200);
-      })
-      .catch(() => {
-        setVerifyMsg("Verification failed. Please try again.");
-        setVerifySuccess(false);
-      });
+        .then((res) => res.json())
+        .then((data) => {
+          setVerifyMsg(data.message || data.error || "Verification complete.");
+          setVerifySuccess(data.status === 200);
+        })
+        .catch(() => {
+          setVerifyMsg("Verification failed. Please try again.");
+          setVerifySuccess(false);
+        });
   }, []);
 
   useEffect(() => {
@@ -159,7 +160,7 @@ export default function App() {
   function handleHistoryOpen() {
     if (!user) {
       window.alert(
-        "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
+          "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
       );
     }
     setView("history");
@@ -250,263 +251,267 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      {verifyMsg && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 9999,
-            padding: "14px 24px",
-            textAlign: "center",
-            fontWeight: "bold",
-            background: verifySuccess ? "#27ae60" : "#c0392b",
-            color: "#fff",
-          }}
-        >
-          {verifyMsg}
-          <button
-            onClick={() => setVerifyMsg("")}
-            style={{
-              marginLeft: 16,
-              background: "none",
-              border: "none",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: 18,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      <div className="shell">
-        {view === "home" ? (
-          <Home
-            onGo={setView}
-            onOpenHistory={handleHistoryOpen}
-            onOpenMultiplayer={handleMultiplayerOpen}
-            onSetTimerDuration={setTimerDuration}
-            onLogin={() => setLoginOpen(true)}
-            onSignup={() => setSignupOpen(true)}
-            onLogout={handleLogout}
-            onFeedback={() => {
-              setFbStatus(null);
-              setFeedbackOpen(true);
-            }}
-            user={user}
-          />
-        ) : view === "unlimited" ? (
-          <SingleUnlimited
-            title={current.title}
-            subtitle={current.subtitle}
-            onGiveUp={finalizeGame}
-          />
-        ) : view === "timed" ? (
-          <SingleTimed
-            timerDuration={timerDuration}
-            title={current.title}
-            subtitle={current.subtitle}
-            onGiveUp={finalizeGame}
-            onTimeUp={finalizeGame}
-          />
-        ) : view === "end" ? (
-          <EndScreen
-            title={current.title}
-            subtitle={current.subtitle}
-            gameStats={lastGameStats}
-            onReturn={() => setView("home")}
-          />
-        ) : view === "history" ? (
-          <History onBack={() => setView("home")} records={guestHistory} user={user} />
-        ) : view === "online" ? (
-            <MultiplayerLobby
-                onBack={() => setView("home")}
-                onEnterGame={enterMultiplayerGame}
-            />
-        ) : view === "multiplayerGame" ? (
-            <MultiplayerGame
-                gameId={multiplayerGameId}
-                playerRole={multiplayerRole}
-                onBackToHome={() => setView("home")}
-            />
-        ) : (
-            <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
-        )}
-      </div>
-
-      <Modal title="Login" open={loginOpen} onClose={closeLogin}>
-        <div className="field">
-          <label htmlFor="login-email">Email</label>
-          <input
-            id="login-email"
-            type="email"
-            placeholder="team25@wisc.edu"
-            autoComplete="email"
-            value={loginEmail}
-            onChange={(e) => setLoginEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="login-password">Password</label>
-          <input
-            id="login-password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            value={loginPassword}
-            onChange={(e) => setLoginPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-          />
-        </div>
-
-        {loginError && <p className="formError">{loginError}</p>}
-        {showResend && (
-          <div className="formResend">
-            <button className="linkBtn" onClick={handleResendVerification}>
-              Resend verification email
-            </button>
-            {resendMsg && <p className="formSuccess">{resendMsg}</p>}
-          </div>
+      <div className="app">
+        {verifyMsg && (
+            <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 9999,
+                  padding: "14px 24px",
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  background: verifySuccess ? "#27ae60" : "#c0392b",
+                  color: "#fff",
+                }}
+            >
+              {verifyMsg}
+              <button
+                  onClick={() => setVerifyMsg("")}
+                  style={{
+                    marginLeft: 16,
+                    background: "none",
+                    border: "none",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: 18,
+                  }}
+              >
+                ×
+              </button>
+            </div>
         )}
 
-        <div className="modalActions">
-          <HudButton variant="miniCancel" onClick={closeLogin}>
-            Cancel
-          </HudButton>
-          <HudButton variant="mini" onClick={handleLogin}>
-            {loginLoading ? "Logging in…" : "Login"}
-          </HudButton>
-        </div>
-      </Modal>
-
-      <Modal title="Sign Up" open={signupOpen} onClose={closeSignup}>
-        <div className="field">
-          <label htmlFor="su-email">Email</label>
-          <input
-            id="su-email"
-            type="email"
-            placeholder="you@wisc.edu"
-            autoComplete="email"
-            value={suEmail}
-            onChange={(e) => setSuEmail(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="su-username">Username</label>
-          <input
-            id="su-username"
-            placeholder="badgerWords123"
-            autoComplete="username"
-            value={suUsername}
-            onChange={(e) => setSuUsername(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="su-password">Password</label>
-          <input
-            id="su-password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="new-password"
-            value={suPassword}
-            onChange={(e) => setSuPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSignup()}
-          />
-        </div>
-
-        {suError && <p className="formError">{suError}</p>}
-        {suSuccess && <p className="formSuccess">{suSuccess}</p>}
-
-        <div className="modalActions">
-          <HudButton variant="miniCancel" onClick={closeSignup}>
-            Cancel
-          </HudButton>
-          {!suSuccess && (
-            <HudButton variant="mini" onClick={handleSignup}>
-              {suLoading ? "Creating…" : "Create"}
-            </HudButton>
+        <div className="shell">
+          {view === "home" ? (
+              <Home
+                  onGo={setView}
+                  onOpenHistory={handleHistoryOpen}
+                  onOpenMultiplayer={handleMultiplayerOpen}
+                  onSetTimerDuration={setTimerDuration}
+                  onLogin={() => setLoginOpen(true)}
+                  onSignup={() => setSignupOpen(true)}
+                  onLogout={handleLogout}
+                  onFeedback={() => {
+                    setFbStatus(null);
+                    setFeedbackOpen(true);
+                  }}
+                  user={user}
+              />
+          ) : view === "unlimited" ? (
+              <SingleUnlimited
+                  title={current.title}
+                  subtitle={current.subtitle}
+                  onGiveUp={finalizeGame}
+              />
+          ) : view === "timed" ? (
+              <SingleTimed
+                  timerDuration={timerDuration}
+                  title={current.title}
+                  subtitle={current.subtitle}
+                  onGiveUp={finalizeGame}
+                  onTimeUp={finalizeGame}
+              />
+          ) : view === "end" ? (
+              <EndScreen
+                  title={current.title}
+                  subtitle={current.subtitle}
+                  gameStats={lastGameStats}
+                  onReturn={() => setView("home")}
+              />
+          ) : view === "history" ? (
+              <History onBack={() => setView("home")} records={guestHistory} user={user} />
+          ) : view === "online" ? (
+              <MultiplayerLobby
+                  onBack={() => setView("home")}
+                  onEnterGame={enterMultiplayerGame}
+              />
+          ) : view === "multiplayerGame" ? (
+              <MultiplayerGame
+                  gameId={multiplayerGameId}
+                  playerRole={multiplayerRole}
+                  onBackToHome={() => setView("home")}
+              />
+          ) : (
+              <Placeholder
+                  title={current.title}
+                  subtitle={current.subtitle}
+                  onBack={() => setView("home")}
+              />
           )}
         </div>
-      </Modal>
 
-      <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
-        <div className="field">
-          <label htmlFor="fb-category">Category</label>
-          <select id="fb-category" value={fbCategory} onChange={(e) => setFbCategory(e.target.value)}>
-            <option value="bug">Bug</option>
-            <option value="suggestion">Suggestion</option>
-            <option value="ui">UI/UX</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+        <Modal title="Login" open={loginOpen} onClose={closeLogin}>
+          <div className="field">
+            <label htmlFor="login-email">Email</label>
+            <input
+                id="login-email"
+                type="email"
+                placeholder="team25@wisc.edu"
+                autoComplete="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="login-password">Password</label>
+            <input
+                id="login-password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+          </div>
 
-        <div className="field">
-          <label htmlFor="fb-message">Message</label>
-          <textarea
-            id="fb-message"
-            rows={5}
-            placeholder="Tell us what you think…"
-            value={fbMessage}
-            onChange={(e) => setFbMessage(e.target.value)}
-          />
-        </div>
+          {loginError && <p className="formError">{loginError}</p>}
+          {showResend && (
+              <div className="formResend">
+                <button className="linkBtn" onClick={handleResendVerification}>
+                  Resend verification email
+                </button>
+                {resendMsg && <p className="formSuccess">{resendMsg}</p>}
+              </div>
+          )}
 
-        <div className="field">
-          <label htmlFor="fb-contact">Contact (optional)</label>
-          <input
-            id="fb-contact"
-            placeholder="Email / Discord"
-            value={fbContact}
-            onChange={(e) => setFbContact(e.target.value)}
-          />
-        </div>
+          <div className="modalActions">
+            <HudButton variant="miniCancel" onClick={closeLogin}>
+              Cancel
+            </HudButton>
+            <HudButton variant="mini" onClick={handleLogin}>
+              {loginLoading ? "Logging in…" : "Login"}
+            </HudButton>
+          </div>
+        </Modal>
 
-        {fbStatus === "sent" ? (
-          <div className="modalHint">Thanks! Your feedback was sent.</div>
-        ) : fbStatus === "error" ? (
-          <div className="modalHint">Could not send feedback. Please try again.</div>
-        ) : null}
+        <Modal title="Sign Up" open={signupOpen} onClose={closeSignup}>
+          <div className="field">
+            <label htmlFor="su-email">Email</label>
+            <input
+                id="su-email"
+                type="email"
+                placeholder="you@wisc.edu"
+                autoComplete="email"
+                value={suEmail}
+                onChange={(e) => setSuEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="su-username">Username</label>
+            <input
+                id="su-username"
+                placeholder="badgerWords123"
+                autoComplete="username"
+                value={suUsername}
+                onChange={(e) => setSuUsername(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="su-password">Password</label>
+            <input
+                id="su-password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                value={suPassword}
+                onChange={(e) => setSuPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSignup()}
+            />
+          </div>
 
-        <div className="modalActions">
-          <HudButton variant="miniCancel" onClick={() => setFeedbackOpen(false)}>
-            Cancel
-          </HudButton>
-          <HudButton
-            variant="mini"
-            onClick={async () => {
-              if (!fbMessage.trim()) {
-                setFbStatus("error");
-                return;
-              }
-              try {
-                setFbStatus("sending");
-                const resp = await fetch("/api/feedback", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    category: fbCategory,
-                    message: fbMessage,
-                    contact: fbContact,
-                  }),
-                });
-                if (!resp.ok) throw new Error("bad response");
-                setFbStatus("sent");
-                setFbMessage("");
-                setFbContact("");
-              } catch {
-                setFbStatus("error");
-              }
-            }}
-          >
-            {fbStatus === "sending" ? "Sending…" : "Send"}
-          </HudButton>
-        </div>
-      </Modal>
-    </div>
+          {suError && <p className="formError">{suError}</p>}
+          {suSuccess && <p className="formSuccess">{suSuccess}</p>}
+
+          <div className="modalActions">
+            <HudButton variant="miniCancel" onClick={closeSignup}>
+              Cancel
+            </HudButton>
+            {!suSuccess && (
+                <HudButton variant="mini" onClick={handleSignup}>
+                  {suLoading ? "Creating…" : "Create"}
+                </HudButton>
+            )}
+          </div>
+        </Modal>
+
+        <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
+          <div className="field">
+            <label htmlFor="fb-category">Category</label>
+            <select id="fb-category" value={fbCategory} onChange={(e) => setFbCategory(e.target.value)}>
+              <option value="bug">Bug</option>
+              <option value="suggestion">Suggestion</option>
+              <option value="ui">UI/UX</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label htmlFor="fb-message">Message</label>
+            <textarea
+                id="fb-message"
+                rows={5}
+                placeholder="Tell us what you think…"
+                value={fbMessage}
+                onChange={(e) => setFbMessage(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="fb-contact">Contact (optional)</label>
+            <input
+                id="fb-contact"
+                placeholder="Email / Discord"
+                value={fbContact}
+                onChange={(e) => setFbContact(e.target.value)}
+            />
+          </div>
+
+          {fbStatus === "sent" ? (
+              <div className="modalHint">Thanks! Your feedback was sent.</div>
+          ) : fbStatus === "error" ? (
+              <div className="modalHint">Could not send feedback. Please try again.</div>
+          ) : null}
+
+          <div className="modalActions">
+            <HudButton variant="miniCancel" onClick={() => setFeedbackOpen(false)}>
+              Cancel
+            </HudButton>
+            <HudButton
+                variant="mini"
+                onClick={async () => {
+                  if (!fbMessage.trim()) {
+                    setFbStatus("error");
+                    return;
+                  }
+                  try {
+                    setFbStatus("sending");
+                    const resp = await fetch("/api/feedback", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        category: fbCategory,
+                        message: fbMessage,
+                        contact: fbContact,
+                      }),
+                    });
+                    if (!resp.ok) throw new Error("bad response");
+                    setFbStatus("sent");
+                    setFbMessage("");
+                    setFbContact("");
+                  } catch {
+                    setFbStatus("error");
+                  }
+                }}
+            >
+              {fbStatus === "sending" ? "Sending…" : "Send"}
+            </HudButton>
+          </div>
+        </Modal>
+      </div>
   );
 }
