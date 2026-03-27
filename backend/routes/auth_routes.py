@@ -21,12 +21,7 @@ from services.user_service import (
     mark_email_verified,
     check_password,
 )
-from services.auth_service import (
-    create_jwt,
-    set_jwt_cookie,
-    clear_jwt_cookie,
-    get_current_user,
-)
+from services.auth_service import create_jwt, set_jwt_cookie, get_current_user_from_request
 
 logger = logging.getLogger(__name__)
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
@@ -270,3 +265,27 @@ def logout():
     response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
     clear_jwt_cookie(response)
     return response, 200
+
+
+# ---------------------------------------------------------------------------
+# GET /api/me
+# ---------------------------------------------------------------------------
+@auth_bp.route("/me", methods=["GET"])
+def me():
+    """Return the currently authenticated user from the JWT cookie."""
+    user = get_current_user_from_request()
+    if not user:
+        return jsonify({"user": None, "status": 200}), 200
+
+    return jsonify({
+        "user": {
+            "user_id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "high_score": user.high_score,
+            "number_of_games_played": user.number_of_games_played,
+        },
+        "status": 200,
+    }), 200
+
+
