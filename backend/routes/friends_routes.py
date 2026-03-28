@@ -4,9 +4,10 @@ friends_routes.py
 Flask routes for Friend System endpoints.
 
 Endpoints:
-- GET    /api/friends/<user_id>              -> list accepted friends
+- GET    /api/friends/<user_id>              -> list accepted friends (includes is_online)
 - GET    /api/friends/<user_id>/requests     -> list pending (incoming/outgoing)
-- POST   /api/friends/request                -> send friend request
+- POST   /api/friends/generate-token         -> generate a 15-min reusable friend token
+- POST   /api/friends/request                -> send friend request via token
 - POST   /api/friends/<request_id>/respond   -> accept/decline request
 - DELETE /api/friends/remove                 -> remove accepted friend
 
@@ -21,7 +22,8 @@ from database import get_db_connection
 from services.friend_service import (
     list_friends,
     list_requests,
-    send_request,
+    generate_friend_token,
+    send_request_by_token,
     respond_request,
     remove_friend,
 )
@@ -32,10 +34,10 @@ friends_bp = Blueprint("friends", __name__, url_prefix="/api/friends")
 @friends_bp.get("/<int:user_id>")
 def get_friends(user_id: int):
     """
-    List accepted friends for a user.
+    List accepted friends for a user, including their online status.
 
     Returns:
-        200: JSON list of friends
+        200: JSON list of friends [{ user_id, username, is_online }, ...]
     """
     conn = get_db_connection()
     try:
@@ -51,7 +53,7 @@ def get_requests(user_id: int):
     List pending friend requests for a user (incoming + outgoing).
 
     Returns:
-        200: JSON object {incoming: [...], outgoing: [...]}
+        200: JSON object { incoming: [...], outgoing: [...] }
     """
     conn = get_db_connection()
     try:
@@ -61,31 +63,57 @@ def get_requests(user_id: int):
         conn.close()
 
 
+@friends_bp.post("/generate-token")
+def post_generate_token():
+    """
+    Generate a reusable 6-character friend token valid for 15 minutes.
+
+    Expected JSON body:
+        { "user_id": <int> }
+
+    Returns:
+        200: { "token": "X7K2P9", "expires_at": "..." }
+        400: missing user_id
+    """
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("user_id")
+
+    if user_id is None:
+        return jsonify({"error": "user_id is required"}), 400
+
+    conn = get_db_connection()
+    try:
+        result = generate_friend_token(conn, int(user_id))
+        return jsonify(result), 200
+    finally:
+        conn.close()
+
+
 @friends_bp.post("/request")
 def post_request():
     """
-    Send a friend request.
+    Send a friend request using a friend token.
 
     Expected JSON body:
         {
           "requester_id": <int>,
-          "addressee_id": <int>
+          "token": <str>
         }
 
     Returns:
-        201: if request created
-        400: validation errors (missing fields, duplicates, self-friend, etc.)
+        201: request created successfully
+        400: invalid/expired token, already friends, self-add, etc.
     """
     payload = request.get_json(silent=True) or {}
     requester_id = payload.get("requester_id")
-    addressee_id = payload.get("addressee_id")
+    token = payload.get("token")
 
-    if requester_id is None or addressee_id is None:
-        return jsonify({"error": "requester_id and addressee_id are required"}), 400
+    if requester_id is None or not token:
+        return jsonify({"error": "requester_id and token are required"}), 400
 
     conn = get_db_connection()
     try:
-        ok, msg = send_request(conn, int(requester_id), int(addressee_id))
+        ok, msg = send_request_by_token(conn, int(requester_id), token)
         if not ok:
             return jsonify({"error": msg}), 400
         return jsonify({"message": msg}), 201
