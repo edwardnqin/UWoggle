@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS games (
     completed         BOOLEAN NOT NULL DEFAULT FALSE,
     created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at      DATETIME NULL,
+    end_reason        VARCHAR(50) NULL,
 
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (host_user_id) REFERENCES users(user_id) ON DELETE SET NULL,

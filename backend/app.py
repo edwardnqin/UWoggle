@@ -63,12 +63,14 @@ def create_app():
     from routes.feedback_routes import feedback_bp
     from routes.friends_routes import friends_bp
     from routes.room_routes import room_bp
+    from routes.game_history_routes import game_history_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(board_bp)
     app.register_blueprint(feedback_bp)
     app.register_blueprint(friends_bp)
     app.register_blueprint(room_bp)
+    app.register_blueprint(game_history_bp)
 
     # --- Create database tables if they don't exist ---
     with app.app_context():
