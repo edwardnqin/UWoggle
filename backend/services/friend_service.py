@@ -25,21 +25,6 @@ import pymysql
 
 
 def list_friends(conn, user_id: int) -> List[Dict[str, Any]]:
-    """
-    Return all accepted friends for a given user.
-
-    A single friendship row in `friends` can represent either direction:
-    - requester_id -> addressee_id
-
-    For a given `user_id`, we return the "other user" as the friend.
-
-    Args:
-        conn: Active DB connection (DictCursor recommended).
-        user_id: The user to list friends for.
-
-    Returns:
-        List of dicts: [{ "user_id": <friend_id>, "username": <friend_username> }, ...]
-    """
     sql = """
           SELECT
               CASE
@@ -49,18 +34,29 @@ def list_friends(conn, user_id: int) -> List[Dict[str, Any]]:
               CASE
                   WHEN f.requester_id = %(user_id)s THEN u2.username
                   ELSE u1.username
-                  END AS friend_username
+                  END AS friend_username,
+              CASE
+                  WHEN f.requester_id = %(user_id)s THEN u2.is_online
+                  ELSE u1.is_online
+                  END AS is_online
           FROM friends f
                    JOIN users u1 ON u1.user_id = f.requester_id
                    JOIN users u2 ON u2.user_id = f.addressee_id
           WHERE (f.requester_id = %(user_id)s OR f.addressee_id = %(user_id)s)
-            AND f.status = 'ACCEPTED'; \
+            AND f.status = 'ACCEPTED';
           """
     with conn.cursor() as cur:
         cur.execute(sql, {"user_id": user_id})
         rows = cur.fetchall()
 
-    return [{"user_id": r["friend_user_id"], "username": r["friend_username"]} for r in rows]
+    return [
+        {
+            "user_id": r["friend_user_id"],
+            "username": r["friend_username"],
+            "is_online": bool(r["is_online"]),
+        }
+        for r in rows
+    ]
 
 
 def list_requests(conn, user_id: int) -> Dict[str, List[Dict[str, Any]]]:
