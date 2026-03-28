@@ -16,7 +16,6 @@ import {
   register,
   logout,
   resendVerification,
-  getMe,
   getCurrentUser,
   saveGameHistory,
   fetchGameHistory,
@@ -35,7 +34,6 @@ export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
-  const [userHistory, setUserHistory] = useState([]);
   const [guestHistory, setGuestHistory] = useState([]);
   const [savedHistory, setSavedHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -166,30 +164,6 @@ export default function App() {
       },
       ...prev,
     ]);
-  }
-
-  function addHistoryRecord(stats) {
-    if (!stats) return;
-
-    if (!user) {
-      setGuestHistory((prev) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          playedAt: new Date().toLocaleString(),
-          ...stats,
-        },
-        ...prev,
-      ]);
-    } else {
-      setUserHistory((prev) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          playedAt: new Date().toLocaleString(),
-          ...stats,
-        },
-        ...prev,
-      ]);
-    }
   }
 
   async function finalizeGame(stats) {
