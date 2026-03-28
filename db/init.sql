@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     high_score            INT          NOT NULL DEFAULT 0,
     number_of_games_played INT         NOT NULL DEFAULT 0,
     is_verified           BOOLEAN      NOT NULL DEFAULT FALSE,
+    is_online             BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                        ON UPDATE CURRENT_TIMESTAMP
@@ -48,6 +49,16 @@ ALTER TABLE friends
 
 CREATE INDEX idx_friends_requester ON friends (requester_id, status);
 CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
+
+-- Friend tokens for token-based friend requests (15 min expiry, reusable)
+CREATE TABLE IF NOT EXISTS friend_tokens (
+    id         INT          AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT          NOT NULL UNIQUE,
+    token      VARCHAR(10)  NOT NULL UNIQUE,
+    expires_at DATETIME     NOT NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
 
 -- add table for board layout and max score
 CREATE TABLE IF NOT EXISTS games (
