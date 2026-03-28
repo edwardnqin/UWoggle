@@ -7,6 +7,7 @@ Endpoints:
   POST /api/logout      — Log out (clears JWT cookie)
   GET  /api/verify      — Verify email from link (?token=...)
   POST /api/resend-verification — Resend verification email
+  GET  /api/users/online — Get all currently online users
 """
 
 import logging
@@ -20,6 +21,7 @@ from services.user_service import (
     get_user_by_username,
     mark_email_verified,
     check_password,
+    set_user_online_status,
 )
 from services.auth_service import create_jwt, set_jwt_cookie, clear_jwt_cookie, get_current_user_from_request
 
@@ -218,6 +220,9 @@ def login():
             "status": 403,
         }), 403
 
+    # Mark user online
+    set_user_online_status(user, True)
+
     token = create_jwt(user)
     response = make_response(jsonify({
         "message": "Login successful",
@@ -227,20 +232,11 @@ def login():
             "email": user.email,
             "high_score": user.high_score,
             "number_of_games_played": user.number_of_games_played,
+            "is_online": user.is_online,
         },
         "status": 200,
     }))
     set_jwt_cookie(response, token)
-    return response, 200
-
-# ---------------------------------------------------------------------------
-# POST /api/logout
-# ---------------------------------------------------------------------------
-@auth_bp.route("/logout", methods=["POST"])
-def logout():
-    """Clear the JWT cookie to log the user out."""
-    response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
-    clear_jwt_cookie(response)
     return response, 200
 
 
@@ -261,6 +257,51 @@ def me():
             "email": user.email,
             "high_score": user.high_score,
             "number_of_games_played": user.number_of_games_played,
+            "is_online": user.is_online,
         },
+        "status": 200,
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/logout
+# ---------------------------------------------------------------------------
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    """Clear the JWT cookie to log the user out."""
+    user = get_current_user_from_request()
+    if user:
+        set_user_online_status(user, False)
+
+    response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
+    clear_jwt_cookie(response)
+    return response, 200
+
+
+# ---------------------------------------------------------------------------
+# GET /api/users/online
+# ---------------------------------------------------------------------------
+@auth_bp.route("/users/online", methods=["GET"])
+def online_users():
+    """
+    Return a list of all currently online users.
+    Requires the caller to be authenticated.
+    """
+    user = get_current_user_from_request()
+    if not user:
+        return jsonify({"error": "Not authenticated", "status": 401}), 401
+
+    from models.user_model import User
+    users = User.query.filter_by(is_online=True).all()
+
+    return jsonify({
+        "online_users": [
+            {
+                "user_id": u.user_id,
+                "username": u.username,
+            }
+            for u in users
+        ],
+        "count": len(users),
         "status": 200,
     }), 200

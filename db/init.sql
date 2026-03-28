@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     high_score            INT          NOT NULL DEFAULT 0,
     number_of_games_played INT         NOT NULL DEFAULT 0,
     is_verified           BOOLEAN      NOT NULL DEFAULT FALSE,
+    is_online             BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                        ON UPDATE CURRENT_TIMESTAMP

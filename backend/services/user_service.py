@@ -56,3 +56,8 @@ def check_password(user: User, password: str) -> bool:
 def get_user_by_id(user_id: int) -> User | None:
     """Fetch a user by their primary key."""
     return User.query.get(user_id)
+
+def set_user_online_status(user, is_online: bool):
+    """Set a user's online/offline status and persist it."""
+    user.is_online = is_online
+    db.session.commit()
