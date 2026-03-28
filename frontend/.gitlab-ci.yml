@@ -1,0 +1,18 @@
+# PROJECT_25/frontend/.gitlab-ci.yml
+
+.frontend_base:
+  image: node:22
+  rules:
+    - changes:
+        - frontend/UWoggleFrontend/**/*
+        - frontend/.gitlab-ci.yml
+        - .gitlab-ci.yml
+  before_script:
+    - cd frontend/UWoggleFrontend
+    - npm ci
+
+frontend-lint:
+  extends: .frontend_base
+  stage: lint
+  script:
+    - npm run lint

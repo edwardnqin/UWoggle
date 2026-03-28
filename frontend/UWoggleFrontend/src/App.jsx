@@ -16,6 +16,7 @@ import {
   register,
   logout,
   resendVerification,
+  getMe,
   getCurrentUser,
   saveGameHistory,
   fetchGameHistory,
@@ -34,6 +35,7 @@ export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
+  const [userHistory, setUserHistory] = useState([]);
   const [guestHistory, setGuestHistory] = useState([]);
   const [savedHistory, setSavedHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -48,6 +50,7 @@ export default function App() {
   const [fbStatus, setFbStatus] = useState(null);
 
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const [verifyMsg, setVerifyMsg] = useState("");
   const [verifySuccess, setVerifySuccess] = useState(false);
@@ -94,9 +97,13 @@ export default function App() {
         const { ok, data } = await getCurrentUser();
         if (ok && data.user) {
           setUser(data.user);
+        } else {
+          setUser(null);
         }
       } catch {
-        // keep anonymous state
+        setUser(null);
+      } finally {
+        setAuthChecked(true);
       }
     }
 
@@ -149,7 +156,7 @@ export default function App() {
   }
 
   function addGuestHistoryRecord(stats) {
-    if (user || !stats) return;
+    if (!stats) return;
 
     setGuestHistory((prev) => [
       {
@@ -159,6 +166,30 @@ export default function App() {
       },
       ...prev,
     ]);
+  }
+
+  function addHistoryRecord(stats) {
+    if (!stats) return;
+
+    if (!user) {
+      setGuestHistory((prev) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          playedAt: new Date().toLocaleString(),
+          ...stats,
+        },
+        ...prev,
+      ]);
+    } else {
+      setUserHistory((prev) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          playedAt: new Date().toLocaleString(),
+          ...stats,
+        },
+        ...prev,
+      ]);
+    }
   }
 
   async function finalizeGame(stats) {
@@ -277,6 +308,10 @@ export default function App() {
     } finally {
       setSuLoading(false);
     }
+  }
+
+  if (!authChecked) {
+    return <div className="app"></div>;
   }
 
   return (

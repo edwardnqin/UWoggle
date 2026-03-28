@@ -29,7 +29,7 @@ public class BoardController {
         for (char[] row : raw) {
             List<String> cells = new ArrayList<>();
             for (char c : row) {
-                cells.add(c == 'Q' ? "Qu" : String.valueOf(c));
+                cells.add(c == 'Q' ? "QU" : String.valueOf(c));
             }
             board.add(cells);
         }

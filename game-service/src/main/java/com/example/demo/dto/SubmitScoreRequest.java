@@ -6,6 +6,7 @@ public class SubmitScoreRequest {
 
     private Integer finalScore;
     private List<String> foundWords;
+    private Long userId;
 
     public SubmitScoreRequest() {
     }
@@ -24,5 +25,13 @@ public class SubmitScoreRequest {
 
     public void setFoundWords(List<String> foundWords) {
         this.foundWords = foundWords;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

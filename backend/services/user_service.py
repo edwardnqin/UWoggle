@@ -52,3 +52,7 @@ def mark_email_verified(user: User) -> None:
 def check_password(user: User, password: str) -> bool:
     """Return True if the provided password matches the stored hash."""
     return bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+
+def get_user_by_id(user_id: int) -> User | None:
+    """Fetch a user by their primary key."""
+    return User.query.get(user_id)

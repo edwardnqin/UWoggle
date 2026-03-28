@@ -43,6 +43,16 @@ export async function resendVerification(email) {
   });
 }
 
+/**
+ * GET /api/me
+ * Returns the currently logged-in user from the auth cookie.
+ */
+export async function getMe() {
+  return request("/me", {
+    method: "GET",
+  });
+}
+
 export async function getCurrentUser() {
   return request("/me");
 }
@@ -57,6 +67,10 @@ export async function saveGameHistory(payload) {
 export async function fetchGameHistory() {
   return request("/games/history");
 }
+
+// ---------------------------------------------------------------------------
+// Game
+// ---------------------------------------------------------------------------
 
 export async function getBoard() {
   return request("/board");
