@@ -241,17 +241,6 @@ def login():
 
 
 # ---------------------------------------------------------------------------
-# POST /api/logout
-# ---------------------------------------------------------------------------
-@auth_bp.route("/logout", methods=["POST"])
-def logout():
-    """Clear the JWT cookie to log the user out."""
-    response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
-    clear_jwt_cookie(response)
-    return response, 200
-
-
-# ---------------------------------------------------------------------------
 # GET /api/me
 # ---------------------------------------------------------------------------
 @auth_bp.route("/me", methods=["GET"])
@@ -280,7 +269,7 @@ def me():
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     """Clear the JWT cookie to log the user out."""
-    user = get_current_user()
+    user = get_current_user_from_request()
     if user:
         set_user_online_status(user, False)
 
@@ -298,7 +287,7 @@ def online_users():
     Return a list of all currently online users.
     Requires the caller to be authenticated.
     """
-    user = get_current_user()
+    user = get_current_user_from_request()
     if not user:
         return jsonify({"error": "Not authenticated", "status": 401}), 401
 
