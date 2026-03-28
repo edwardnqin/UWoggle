@@ -1,6 +1,5 @@
 import { useState } from "react";
 import HudButton from "../components/ui/HudButton";
-import WinsBadge from "../components/ui/WinsBadge";
 import PlayIcon from "../components/ui/PlayIcon";
 import ProfileDropdown from "../components/ui/ProfileDropdown";
 import logoPng from "../assets/UWoggle.png";
@@ -22,12 +21,13 @@ export default function Home({
   return (
     <>
       <div className="topRow">
-        <WinsBadge wins={0} className="animLeft delay1" />
-
-        <div className="rightBtns animRight delay2">
+        <div className="leftBtns animLeft delay1">
           <HudButton variant="mini" onClick={onFeedback} ariaLabel="Open feedback">
             Feedback
           </HudButton>
+        </div>
+
+        <div className="rightBtns animRight delay2">
           {user ? (
             <ProfileDropdown user={user} onLogout={onLogout} />
           ) : (

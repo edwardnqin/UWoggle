@@ -23,12 +23,7 @@ from services.user_service import (
     check_password,
     set_user_online_status,
 )
-from services.auth_service import (
-    create_jwt,
-    set_jwt_cookie,
-    clear_jwt_cookie,
-    get_current_user,
-)
+from services.auth_service import create_jwt, set_jwt_cookie, clear_jwt_cookie, get_current_user_from_request
 
 logger = logging.getLogger(__name__)
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
@@ -246,16 +241,25 @@ def login():
 
 
 # ---------------------------------------------------------------------------
+# POST /api/logout
+# ---------------------------------------------------------------------------
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    """Clear the JWT cookie to log the user out."""
+    response = make_response(jsonify({"message": "Logged out successfully", "status": 200}))
+    clear_jwt_cookie(response)
+    return response, 200
+
+
+# ---------------------------------------------------------------------------
 # GET /api/me
 # ---------------------------------------------------------------------------
 @auth_bp.route("/me", methods=["GET"])
 def me():
-    """
-    Return the currently authenticated user based on the JWT cookie.
-    """
-    user = get_current_user()
+    """Return the currently authenticated user from the JWT cookie."""
+    user = get_current_user_from_request()
     if not user:
-        return jsonify({"error": "Not authenticated", "status": 401}), 401
+        return jsonify({"user": None, "status": 200}), 200
 
     return jsonify({
         "user": {

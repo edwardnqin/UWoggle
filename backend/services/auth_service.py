@@ -11,7 +11,6 @@ from services.user_service import get_user_by_id
 COOKIE_NAME = "access_token"
 TOKEN_MAX_AGE = 7 * 24 * 60 * 60  # 7 days
 
-
 def create_jwt(user) -> str:
     """Create a signed JWT token for the given user."""
     payload = {
@@ -34,7 +33,6 @@ def set_jwt_cookie(response, token: str):
         path="/",
     )
 
-
 def clear_jwt_cookie(response):
     """Clear the auth cookie."""
     response.delete_cookie(
@@ -46,21 +44,19 @@ def clear_jwt_cookie(response):
     )
 
 
-def get_current_user():
-    """Read JWT from cookie, verify it, and return the matching user."""
-    token = request.cookies.get(COOKIE_NAME)
+def get_current_user_from_request():
+    """Return the authenticated user for the current request, or None."""
+    token = request.cookies.get("access_token")
     if not token:
         return None
 
     try:
-        payload = jwt.decode(
-            token,
-            current_app.config["SECRET_KEY"],
-            algorithms=["HS256"],
-        )
-        user_id = payload.get("user_id")
-        if not user_id:
-            return None
-        return get_user_by_id(user_id)
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
     except jwt.PyJWTError:
         return None
+
+    user_id = payload.get("user_id")
+    if not user_id:
+        return None
+
+    return get_user_by_id(user_id)
