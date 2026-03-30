@@ -11,7 +11,15 @@ import History from "./pages/History";
 import Modal from "./components/ui/Modal";
 import HudButton from "./components/ui/HudButton";
 
-import { login, register, logout, resendVerification, getMe } from "./services/api";
+import {
+  login,
+  register,
+  logout,
+  resendVerification,
+  getCurrentUser,
+  saveGameHistory,
+  fetchGameHistory,
+} from "./services/api";
 
 const VIEWS = {
   home: { title: null, subtitle: null },
@@ -26,8 +34,10 @@ export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
-  const [userHistory, setUserHistory] = useState([]);
   const [guestHistory, setGuestHistory] = useState([]);
+  const [savedHistory, setSavedHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -80,9 +90,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    async function restoreUser() {
+    async function restoreSession() {
       try {
-        const { ok, data } = await getMe();
+        const { ok, data } = await getCurrentUser();
         if (ok && data.user) {
           setUser(data.user);
         } else {
@@ -94,9 +104,36 @@ export default function App() {
         setAuthChecked(true);
       }
     }
-  
-    restoreUser();
+
+    restoreSession();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setSavedHistory([]);
+      setHistoryError("");
+      return;
+    }
+
+    loadSavedHistory();
+  }, [user]);
+
+  async function loadSavedHistory() {
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const { ok, data } = await fetchGameHistory();
+      if (ok) {
+        setSavedHistory(data.records || []);
+      } else {
+        setHistoryError(data.error || "Could not load your saved history.");
+      }
+    } catch {
+      setHistoryError("Could not load your saved history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   function closeLogin() {
     setLoginOpen(false);
@@ -116,42 +153,50 @@ export default function App() {
     setSuSuccess("");
   }
 
-  function addHistoryRecord(stats) {
+  function addGuestHistoryRecord(stats) {
     if (!stats) return;
 
-    if (!user) {
-      setGuestHistory((prev) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          playedAt: new Date().toLocaleString(),
-          ...stats,
-        },
-        ...prev,
-      ]);
-    } else {
-      setUserHistory((prev) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          playedAt: new Date().toLocaleString(),
-          ...stats,
-        },
-        ...prev,
-      ]);
-    }
+    setGuestHistory((prev) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        playedAt: new Date().toLocaleString(),
+        ...stats,
+      },
+      ...prev,
+    ]);
   }
 
-  function finalizeGame(stats) {
+  async function finalizeGame(stats) {
     setLastGameStats(stats);
-    addHistoryRecord(stats);
+
+    if (!user) {
+      addGuestHistoryRecord(stats);
+      setView("end");
+      return;
+    }
+
+    try {
+      const { ok, data } = await saveGameHistory(stats);
+      if (ok && data.record) {
+        setSavedHistory((prev) => [data.record, ...prev]);
+      }
+    } catch {
+      // End screen still opens even if saving fails.
+    }
+
     setView("end");
   }
 
-  function handleHistoryOpen() {
+  async function handleHistoryOpen() {
     if (!user) {
       window.alert(
         "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
       );
+      setView("history");
+      return;
     }
+
+    await loadSavedHistory();
     setView("history");
   }
 
@@ -315,7 +360,13 @@ export default function App() {
             onReturn={() => setView("home")}
           />
         ) : view === "history" ? (
-          <History onBack={() => setView("home")} records={user ? userHistory : guestHistory} user={user} />
+          <History
+            onBack={() => setView("home")}
+            records={user ? savedHistory : guestHistory}
+            user={user}
+            loading={historyLoading}
+            error={historyError}
+          />
         ) : (
           <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
         )}
@@ -462,22 +513,19 @@ export default function App() {
           <HudButton
             variant="mini"
             onClick={async () => {
-              if (!fbMessage.trim()) {
-                setFbStatus("error");
-                return;
-              }
+              setFbStatus(null);
               try {
-                setFbStatus("sending");
-                const resp = await fetch("/api/feedback", {
+                const res = await fetch("/api/feedback", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
+                  credentials: "include",
                   body: JSON.stringify({
                     category: fbCategory,
                     message: fbMessage,
-                    contact: fbContact,
+                    contact: fbContact || null,
                   }),
                 });
-                if (!resp.ok) throw new Error("bad response");
+                if (!res.ok) throw new Error("bad");
                 setFbStatus("sent");
                 setFbMessage("");
                 setFbContact("");
@@ -486,7 +534,7 @@ export default function App() {
               }
             }}
           >
-            {fbStatus === "sending" ? "Sending…" : "Send"}
+            Send
           </HudButton>
         </div>
       </Modal>
