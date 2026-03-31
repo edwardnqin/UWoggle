@@ -29,7 +29,6 @@ def set_jwt_cookie(response, token: str):
         httponly=True,
         secure=os.environ.get("FLASK_ENV") == "production",
         samesite="Lax",
-        max_age=TOKEN_MAX_AGE,
         path="/",
     )
 
