@@ -7,6 +7,20 @@ export default function ProfileDropdown({ user, onLogout }) {
   const [isClosing, setIsClosing] = useState(false);
   const [activeView, setActiveView] = useState("friends");
 
+  function closeSidebar() {
+    setIsClosing(true);
+
+    setTimeout(() => {
+      setOpen(false);
+      setIsClosing(false);
+    }, CLOSE_ANIMATION_MS);
+  }
+
+  function openSidebar() {
+    setIsClosing(false);
+    setOpen(true);
+  }
+
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === "Escape") {
@@ -25,19 +39,9 @@ export default function ProfileDropdown({ user, onLogout }) {
     };
   }, [open]);
 
-  function openSidebar() {
-    setIsClosing(false);
-    setOpen(true);
-  }
+  
 
-  function closeSidebar() {
-    setIsClosing(true);
-
-    setTimeout(() => {
-      setOpen(false);
-      setIsClosing(false);
-    }, CLOSE_ANIMATION_MS);
-  }
+  
 
   const username = user?.username || user?.email || "User";
   const userId = user?.user_id ?? "—";
