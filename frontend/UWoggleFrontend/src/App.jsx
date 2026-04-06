@@ -20,6 +20,8 @@ import {
   saveGameHistory,
   fetchGameHistory,
 } from "./services/api";
+import MultiplayerLobby from "./pages/MultiplayerLobby";
+import MultiplayerGame from "./pages/MultiplayerGame";
 
 const VIEWS = {
   home: { title: null, subtitle: null },
@@ -27,6 +29,7 @@ const VIEWS = {
   timed: { title: null, subtitle: null },
   end: { title: "GAME END", subtitle: "Here are the game stats:" },
   online: { title: "Online", subtitle: "Matchmaking / lobby / invite-a-friend can live here." },
+  multiplayerGame: { title: null, subtitle: null },
   history: { title: "History", subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
 };
 
@@ -34,10 +37,12 @@ export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
   const [lastGameStats, setLastGameStats] = useState(null);
+
   const [guestHistory, setGuestHistory] = useState([]);
   const [savedHistory, setSavedHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -48,7 +53,6 @@ export default function App() {
   const [fbStatus, setFbStatus] = useState(null);
 
   const [user, setUser] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
 
   const [verifyMsg, setVerifyMsg] = useState("");
   const [verifySuccess, setVerifySuccess] = useState(false);
@@ -67,7 +71,16 @@ export default function App() {
   const [suSuccess, setSuSuccess] = useState("");
   const [suLoading, setSuLoading] = useState(false);
 
-  const current = VIEWS[view];
+  const [multiplayerGameId, setMultiplayerGameId] = useState(null);
+  const [multiplayerRole, setMultiplayerRole] = useState(null);
+
+  const current = VIEWS[view] || { title: null, subtitle: null };
+
+  function enterMultiplayerGame(gameId, role) {
+    setMultiplayerGameId(gameId);
+    setMultiplayerRole(role);
+    setView("multiplayerGame");
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -90,50 +103,50 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    async function restoreSession() {
+    async function loadCurrentUser() {
       try {
-        const { ok, data } = await getCurrentUser();
-        if (ok && data.user) {
+        const data = await getCurrentUser();
+        if (data?.user) {
           setUser(data.user);
-        } else {
-          setUser(null);
         }
       } catch {
         setUser(null);
-      } finally {
-        setAuthChecked(true);
       }
     }
 
-    restoreSession();
+    loadCurrentUser();
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setSavedHistory([]);
-      setHistoryError("");
-      return;
-    }
-
-    loadSavedHistory();
-  }, [user]);
-
-  async function loadSavedHistory() {
-    setHistoryLoading(true);
-    setHistoryError("");
-    try {
-      const { ok, data } = await fetchGameHistory();
-      if (ok) {
-        setSavedHistory(data.records || []);
-      } else {
-        setHistoryError(data.error || "Could not load your saved history.");
+    async function loadHistory() {
+      if (!user) {
+        setSavedHistory([]);
+        setHistoryError("");
+        return;
       }
-    } catch {
-      setHistoryError("Could not load your saved history.");
-    } finally {
-      setHistoryLoading(false);
+
+      setHistoryLoading(true);
+      setHistoryError("");
+
+      try {
+        const data = await fetchGameHistory();
+        if (Array.isArray(data)) {
+          setSavedHistory(data);
+        } else if (Array.isArray(data?.history)) {
+          setSavedHistory(data.history);
+        } else {
+          setSavedHistory([]);
+        }
+      } catch {
+        setHistoryError("Could not load history.");
+        setSavedHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
     }
-  }
+
+    loadHistory();
+  }, [user]);
 
   function closeLogin() {
     setLoginOpen(false);
@@ -154,7 +167,7 @@ export default function App() {
   }
 
   function addGuestHistoryRecord(stats) {
-    if (!stats) return;
+    if (user || !stats) return;
 
     setGuestHistory((prev) => [
       {
@@ -166,45 +179,40 @@ export default function App() {
     ]);
   }
 
-  async function finalizeGame(stats) {
-    setLastGameStats(stats);
-
-    if (!user) {
-      addGuestHistoryRecord(stats);
-      setView("end");
-      return;
-    }
+  async function persistUserHistory(stats) {
+    if (!user || !stats) return;
 
     try {
-      const { ok, data } = await saveGameHistory(stats);
-      if (ok && data.record) {
-        setSavedHistory((prev) => [data.record, ...prev]);
+      await saveGameHistory(stats);
+      const data = await fetchGameHistory();
+
+      if (Array.isArray(data)) {
+        setSavedHistory(data);
+      } else if (Array.isArray(data?.history)) {
+        setSavedHistory(data.history);
       }
     } catch {
-      // End screen still opens even if saving fails.
+      setHistoryError("Could not save game history.");
     }
+  }
 
+  function finalizeGame(stats) {
+    setLastGameStats(stats);
+    addGuestHistoryRecord(stats);
+    persistUserHistory(stats);
     setView("end");
   }
 
-  async function handleHistoryOpen() {
+  function handleHistoryOpen() {
     if (!user) {
       window.alert(
         "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
       );
-      setView("history");
-      return;
     }
-
-    await loadSavedHistory();
     setView("history");
   }
 
   function handleMultiplayerOpen() {
-    if (!user) {
-      window.alert("Please create an account or log in to use Multiplayer.");
-      return;
-    }
     setView("online");
   }
 
@@ -240,6 +248,7 @@ export default function App() {
 
   async function handleLogout() {
     setUser(null);
+    setSavedHistory([]);
     try {
       await logout();
     } catch {
@@ -282,10 +291,6 @@ export default function App() {
     } finally {
       setSuLoading(false);
     }
-  }
-
-  if (!authChecked) {
-    return <div className="app"></div>;
   }
 
   return (
@@ -367,8 +372,23 @@ export default function App() {
             loading={historyLoading}
             error={historyError}
           />
+        ) : view === "online" ? (
+          <MultiplayerLobby
+            onBack={() => setView("home")}
+            onEnterGame={enterMultiplayerGame}
+          />
+        ) : view === "multiplayerGame" ? (
+          <MultiplayerGame
+            gameId={multiplayerGameId}
+            playerRole={multiplayerRole}
+            onBackToHome={() => setView("home")}
+          />
         ) : (
-          <Placeholder title={current.title} subtitle={current.subtitle} onBack={() => setView("home")} />
+          <Placeholder
+            title={current.title}
+            subtitle={current.subtitle}
+            onBack={() => setView("home")}
+          />
         )}
       </div>
 
@@ -471,7 +491,11 @@ export default function App() {
       <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
         <div className="field">
           <label htmlFor="fb-category">Category</label>
-          <select id="fb-category" value={fbCategory} onChange={(e) => setFbCategory(e.target.value)}>
+          <select
+            id="fb-category"
+            value={fbCategory}
+            onChange={(e) => setFbCategory(e.target.value)}
+          >
             <option value="bug">Bug</option>
             <option value="suggestion">Suggestion</option>
             <option value="ui">UI/UX</option>
@@ -513,9 +537,14 @@ export default function App() {
           <HudButton
             variant="mini"
             onClick={async () => {
-              setFbStatus(null);
+              if (!fbMessage.trim()) {
+                setFbStatus("error");
+                return;
+              }
+
               try {
-                const res = await fetch("/api/feedback", {
+                setFbStatus("sending");
+                const resp = await fetch("/api/feedback", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   credentials: "include",
@@ -525,7 +554,9 @@ export default function App() {
                     contact: fbContact || null,
                   }),
                 });
-                if (!res.ok) throw new Error("bad");
+
+                if (!resp.ok) throw new Error("bad response");
+
                 setFbStatus("sent");
                 setFbMessage("");
                 setFbContact("");
@@ -534,7 +565,7 @@ export default function App() {
               }
             }}
           >
-            Send
+            {fbStatus === "sending" ? "Sending…" : "Send"}
           </HudButton>
         </div>
       </Modal>

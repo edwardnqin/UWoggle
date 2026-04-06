@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
-function Grid({ onCommitWord, onBoardReady }) {
+function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = null, skipFetch = false }) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
   const [status, setStatus] = useState("Loading board...");
@@ -13,6 +13,29 @@ function Grid({ onCommitWord, onBoardReady }) {
   useEffect(() => {
     let cancelled = false;
 
+    if (skipFetch && initialBoard) {
+      const normalizedWords = Object.fromEntries(
+          Object.entries(initialWords ?? {}).map(([word, points]) => [
+            word.toUpperCase(),
+            Number(points),
+          ])
+      );
+
+      setGrid(initialBoard);
+      setBoardWords(normalizedWords);
+      submittedWordsRef.current = new Set();
+
+      onBoardReady?.({
+        board: initialBoard,
+        totalWords: Object.keys(normalizedWords).length,
+      });
+
+      setStatus("Board ready.");
+      return () => {
+        cancelled = true;
+      };
+    }
+
     getBoard().then((res) => {
       if (cancelled) return;
 
@@ -22,26 +45,28 @@ function Grid({ onCommitWord, onBoardReady }) {
       }
 
       const normalizedWords = Object.fromEntries(
-        Object.entries(res.data.words ?? {}).map(([word, points]) => [
-          word.toUpperCase(),
-          Number(points),
-        ])
+          Object.entries(res.data.words ?? {}).map(([word, points]) => [
+            word.toUpperCase(),
+            Number(points),
+          ])
       );
 
       setGrid(res.data.board);
       setBoardWords(normalizedWords);
       submittedWordsRef.current = new Set();
+
       onBoardReady?.({
         board: res.data.board,
         totalWords: Object.keys(normalizedWords).length,
       });
+
       setStatus("Board ready.");
     });
 
     return () => {
       cancelled = true;
     };
-  }, [onBoardReady]);
+  }, [onBoardReady, initialBoard, initialWords, skipFetch]);
 
   // Wrap container (for outside-click detection + trail coordinate space)
   const boardRef = useRef(null);

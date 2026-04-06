@@ -75,3 +75,58 @@ export async function fetchGameHistory() {
 export async function getBoard() {
   return request("/board");
 }
+
+export async function createMultiplayerGame(timerSeconds, hostName) {
+  return fetch("http://localhost:8080/api/games", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mode: "multiplayer",
+      timerSeconds,
+      hostName,
+    }),
+  }).then(async (res) => ({
+    ok: res.ok,
+    status: res.status,
+    data: await res.json().catch(() => ({})),
+  }));
+}
+
+export async function joinMultiplayerGame(joinCode, guestName) {
+  const query = guestName ? `?guestName=${encodeURIComponent(guestName)}` : "";
+  return fetch(`http://localhost:8080/api/games/join/${encodeURIComponent(joinCode)}${query}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  }).then(async (res) => ({
+    ok: res.ok,
+    status: res.status,
+    data: await res.json().catch(() => ({})),
+  }));
+}
+
+export async function getGameSession(gameId) {
+  return fetch(`http://localhost:8080/api/games/${gameId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  }).then(async (res) => ({
+    ok: res.ok,
+    status: res.status,
+    data: await res.json().catch(() => ({})),
+  }));
+}
+
+export async function submitMultiplayerScore(gameId, playerRole, finalScore, foundWords) {
+  return fetch(`http://localhost:8080/api/games/${gameId}/score`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      playerRole,
+      finalScore,
+      foundWords,
+    }),
+  }).then(async (res) => ({
+    ok: res.ok,
+    status: res.status,
+    data: await res.json().catch(() => ({})),
+  }));
+}

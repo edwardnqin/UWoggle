@@ -25,9 +25,9 @@ public class GameController {
     @PostMapping("/join/{joinCode}")
     public Map<String, Object> joinGame(
             @PathVariable String joinCode,
-            @RequestParam Long guestUserId
+            @RequestParam(required = false) String guestName
     ) {
-        return gameSessionService.joinGame(joinCode, guestUserId);
+        return gameSessionService.joinGame(joinCode, guestName);
     }
 
     @GetMapping("/{id}")

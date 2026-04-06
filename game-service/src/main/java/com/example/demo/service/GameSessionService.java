@@ -9,7 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class GameSessionService {
@@ -40,14 +45,17 @@ public class GameSessionService {
         gameSession.setMaxScore(maxScore);
         gameSession.setMode(request.getMode() == null ? "singleplayer" : request.getMode());
         gameSession.setTimerSeconds(request.getTimerSeconds() == null ? 180 : request.getTimerSeconds());
-        gameSession.setHostUserId(request.getHostUserId());
+        gameSession.setHostName(
+                request.getHostName() == null || request.getHostName().isBlank()
+                        ? "Host"
+                        : request.getHostName()
+        );
 
         if ("multiplayer".equalsIgnoreCase(gameSession.getMode())) {
             gameSession.setStatus("WAITING");
             gameSession.setJoinCode(generateJoinCode());
         } else {
             gameSession.setStatus("ACTIVE");
-            gameSession.setUserId(request.getHostUserId());
         }
 
         GameSession saved = gameRepository.save(gameSession);
@@ -61,11 +69,12 @@ public class GameSessionService {
         response.put("timerSeconds", saved.getTimerSeconds());
         response.put("status", saved.getStatus());
         response.put("joinCode", saved.getJoinCode());
+        response.put("hostName", saved.getHostName());
 
         return response;
     }
 
-    public Map<String, Object> joinGame(String joinCode, Long guestUserId) {
+    public Map<String, Object> joinGame(String joinCode, String guestName) {
         GameSession gameSession = gameRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
@@ -73,23 +82,30 @@ public class GameSessionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This is not a multiplayer game");
         }
 
-        if (gameSession.getGuestUserId() != null) {
+        if (gameSession.getGuestName() != null && !gameSession.getGuestName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game already has a second player");
         }
 
-        gameSession.setGuestUserId(guestUserId);
+        gameSession.setGuestName(
+                guestName == null || guestName.isBlank()
+                        ? "Guest"
+                        : guestName
+        );
         gameSession.setStatus("ACTIVE");
 
         GameSession saved = gameRepository.save(gameSession);
 
-        return Map.of(
-                "gameId", saved.getId(),
-                "joinCode", saved.getJoinCode(),
-                "status", saved.getStatus(),
-                "mode", saved.getMode(),
-                "timerSeconds", saved.getTimerSeconds(),
-                "message", "Joined successfully"
-        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("gameId", saved.getId());
+        response.put("joinCode", saved.getJoinCode());
+        response.put("status", saved.getStatus());
+        response.put("mode", saved.getMode());
+        response.put("timerSeconds", saved.getTimerSeconds());
+        response.put("hostName", saved.getHostName());
+        response.put("guestName", saved.getGuestName());
+        response.put("message", "Joined successfully");
+
+        return response;
     }
 
     public Map<String, Object> submitScore(Long gameId, SubmitScoreRequest request) {
@@ -97,63 +113,39 @@ public class GameSessionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "finalScore is required");
         }
 
-        if (request.getUserId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+        if (request.getPlayerRole() == null || request.getPlayerRole().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "playerRole is required");
         }
 
         GameSession gameSession = gameRepository.findById(gameId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
         String foundWordsSerialized = serializeFoundWords(request.getFoundWords());
+        String role = request.getPlayerRole().trim().toUpperCase(Locale.ROOT);
 
-        // Single-player fallback
-        if (!"multiplayer".equalsIgnoreCase(gameSession.getMode())) {
-            if (Boolean.TRUE.equals(gameSession.getCompleted())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game already completed");
-            }
-
-            gameSession.setFinalScore(request.getFinalScore());
-            gameSession.setFoundWords(foundWordsSerialized);
-            gameSession.setCompleted(true);
-            gameSession.setCompletedAt(LocalDateTime.now());
-
-            GameSession updated = gameRepository.save(gameSession);
-
-            return Map.of(
-                    "gameId", updated.getId(),
-                    "finalScore", updated.getFinalScore(),
-                    "foundWords", request.getFoundWords() == null ? List.of() : request.getFoundWords(),
-                    "completed", updated.getCompleted()
-            );
-        }
-
-        // Multiplayer 1v1
-        Long submittedUserId = request.getUserId();
-
-        if (submittedUserId.equals(gameSession.getHostUserId())) {
+        if ("HOST".equals(role)) {
             if (gameSession.getHostScore() != null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Host score already submitted");
             }
             gameSession.setHostScore(request.getFinalScore());
             gameSession.setHostFoundWords(foundWordsSerialized);
-        } else if (submittedUserId.equals(gameSession.getGuestUserId())) {
+        } else if ("GUEST".equals(role)) {
             if (gameSession.getGuestScore() != null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Guest score already submitted");
             }
             gameSession.setGuestScore(request.getFinalScore());
             gameSession.setGuestFoundWords(foundWordsSerialized);
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not part of this game");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "playerRole must be HOST or GUEST");
         }
 
-        // If both players submitted, determine winner
         if (gameSession.getHostScore() != null && gameSession.getGuestScore() != null) {
             if (gameSession.getHostScore() > gameSession.getGuestScore()) {
-                gameSession.setWinnerUserId(gameSession.getHostUserId());
+                gameSession.setWinnerSlot("HOST");
             } else if (gameSession.getGuestScore() > gameSession.getHostScore()) {
-                gameSession.setWinnerUserId(gameSession.getGuestUserId());
+                gameSession.setWinnerSlot("GUEST");
             } else {
-                gameSession.setWinnerUserId(null); // tie
+                gameSession.setWinnerSlot("TIE");
             }
 
             gameSession.setCompleted(true);
@@ -168,8 +160,8 @@ public class GameSessionService {
         response.put("mode", updated.getMode());
         response.put("hostScore", updated.getHostScore());
         response.put("guestScore", updated.getGuestScore());
+        response.put("winnerSlot", updated.getWinnerSlot());
         response.put("completed", updated.getCompleted());
-        response.put("winnerUserId", updated.getWinnerUserId());
         response.put("message", "Score submitted successfully");
 
         return response;
@@ -179,19 +171,25 @@ public class GameSessionService {
         GameSession gameSession = gameRepository.findById(gameId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
+        char[][] rawBoard = deserializeBoardToChars(gameSession.getBoardLayout());
+        List<List<String>> board = toFrontendBoard(rawBoard);
+        Map<String, Integer> words = boggleSolver.solve(rawBoard);
+
         Map<String, Object> response = new HashMap<>();
         response.put("gameId", gameSession.getId());
         response.put("mode", gameSession.getMode());
         response.put("status", gameSession.getStatus());
         response.put("timerSeconds", gameSession.getTimerSeconds());
         response.put("joinCode", gameSession.getJoinCode());
-        response.put("hostUserId", gameSession.getHostUserId());
-        response.put("guestUserId", gameSession.getGuestUserId());
+        response.put("hostName", gameSession.getHostName());
+        response.put("guestName", gameSession.getGuestName());
         response.put("boardLayout", gameSession.getBoardLayout());
+        response.put("board", board);
+        response.put("words", words);
         response.put("maxScore", gameSession.getMaxScore());
         response.put("hostScore", gameSession.getHostScore());
         response.put("guestScore", gameSession.getGuestScore());
-        response.put("winnerUserId", gameSession.getWinnerUserId());
+        response.put("winnerSlot", gameSession.getWinnerSlot());
         response.put("completed", gameSession.getCompleted());
 
         return response;
@@ -215,8 +213,25 @@ public class GameSessionService {
         return board;
     }
 
+    private char[][] deserializeBoardToChars(String boardLayout) {
+        String[] rows = boardLayout.split("\\|");
+        char[][] board = new char[rows.length][];
+
+        for (int r = 0; r < rows.length; r++) {
+            String[] cells = rows[r].split(",");
+            board[r] = new char[cells.length];
+            for (int c = 0; c < cells.length; c++) {
+                board[r][c] = cells[c].charAt(0);
+            }
+        }
+
+        return board;
+    }
+
     private String serializeFoundWords(List<String> foundWords) {
-        if (foundWords == null || foundWords.isEmpty()) return "";
+        if (foundWords == null || foundWords.isEmpty()) {
+            return "";
+        }
         return String.join(",", foundWords);
     }
 
@@ -226,9 +241,13 @@ public class GameSessionService {
         for (int r = 0; r < raw.length; r++) {
             for (int c = 0; c < raw[r].length; c++) {
                 sb.append(raw[r][c]);
-                if (c < raw[r].length - 1) sb.append(",");
+                if (c < raw[r].length - 1) {
+                    sb.append(",");
+                }
             }
-            if (r < raw.length - 1) sb.append("|");
+            if (r < raw.length - 1) {
+                sb.append("|");
+            }
         }
 
         return sb.toString();

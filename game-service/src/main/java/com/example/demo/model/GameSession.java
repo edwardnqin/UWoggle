@@ -11,15 +11,6 @@ public class GameSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "host_user_id")
-    private Long hostUserId;
-
-    @Column(name = "guest_user_id")
-    private Long guestUserId;
-
     @Column(nullable = false)
     private String mode;
 
@@ -32,20 +23,18 @@ public class GameSession {
     @Column(name = "join_code", unique = true)
     private String joinCode;
 
+    @Column(name = "host_name")
+    private String hostName;
+
+    @Column(name = "guest_name")
+    private String guestName;
+
     @Column(name = "board_layout", nullable = false)
     private String boardLayout;
 
     @Column(name = "max_score", nullable = false)
     private Integer maxScore;
 
-    // legacy single-player
-    @Column(name = "final_score")
-    private Integer finalScore;
-
-    @Column(name = "found_words", columnDefinition = "TEXT")
-    private String foundWords;
-
-    // real multiplayer 1v1
     @Column(name = "host_score")
     private Integer hostScore;
 
@@ -58,8 +47,8 @@ public class GameSession {
     @Column(name = "guest_found_words", columnDefinition = "TEXT")
     private String guestFoundWords;
 
-    @Column(name = "winner_user_id")
-    private Long winnerUserId;
+    @Column(name = "winner_slot")
+    private String winnerSlot;
 
     @Column(nullable = false)
     private Boolean completed;
@@ -84,15 +73,6 @@ public class GameSession {
 
     public Long getId() { return id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
-    public Long getHostUserId() { return hostUserId; }
-    public void setHostUserId(Long hostUserId) { this.hostUserId = hostUserId; }
-
-    public Long getGuestUserId() { return guestUserId; }
-    public void setGuestUserId(Long guestUserId) { this.guestUserId = guestUserId; }
-
     public String getMode() { return mode; }
     public void setMode(String mode) { this.mode = mode; }
 
@@ -105,17 +85,17 @@ public class GameSession {
     public String getJoinCode() { return joinCode; }
     public void setJoinCode(String joinCode) { this.joinCode = joinCode; }
 
+    public String getHostName() { return hostName; }
+    public void setHostName(String hostName) { this.hostName = hostName; }
+
+    public String getGuestName() { return guestName; }
+    public void setGuestName(String guestName) { this.guestName = guestName; }
+
     public String getBoardLayout() { return boardLayout; }
     public void setBoardLayout(String boardLayout) { this.boardLayout = boardLayout; }
 
     public Integer getMaxScore() { return maxScore; }
     public void setMaxScore(Integer maxScore) { this.maxScore = maxScore; }
-
-    public Integer getFinalScore() { return finalScore; }
-    public void setFinalScore(Integer finalScore) { this.finalScore = finalScore; }
-
-    public String getFoundWords() { return foundWords; }
-    public void setFoundWords(String foundWords) { this.foundWords = foundWords; }
 
     public Integer getHostScore() { return hostScore; }
     public void setHostScore(Integer hostScore) { this.hostScore = hostScore; }
@@ -129,8 +109,8 @@ public class GameSession {
     public String getGuestFoundWords() { return guestFoundWords; }
     public void setGuestFoundWords(String guestFoundWords) { this.guestFoundWords = guestFoundWords; }
 
-    public Long getWinnerUserId() { return winnerUserId; }
-    public void setWinnerUserId(Long winnerUserId) { this.winnerUserId = winnerUserId; }
+    public String getWinnerSlot() { return winnerSlot; }
+    public void setWinnerSlot(String winnerSlot) { this.winnerSlot = winnerSlot; }
 
     public Boolean getCompleted() { return completed; }
     public void setCompleted(Boolean completed) { this.completed = completed; }
