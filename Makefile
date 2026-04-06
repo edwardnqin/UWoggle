@@ -38,7 +38,7 @@ all: db
 	@$(MAKE) --no-print-directory frontend
 	@echo ""
 	@echo "✅  UWoggle is running:"
-	@echo "    Frontend  → http://localhost:3000"
+	@echo "    Frontend  → http://localhost:5173"
 	@echo "    Backend   → http://localhost:5000"
 	@echo "    Game Svc  → http://localhost:8080"
 	@echo "    MySQL     → localhost:3306"
@@ -63,7 +63,7 @@ game:
 
 # ── React frontend ────────────────────────────────────────────────────────────
 frontend:
-	@echo "⚛️   Starting React frontend on :3000..."
+	@echo "⚛️   Starting React frontend on :5173..."
 	cd $(FRONTEND_DIR) && npm run dev
 
 # ── Stop all services ─────────────────────────────────────────────────────────
