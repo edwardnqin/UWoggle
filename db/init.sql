@@ -50,6 +50,8 @@ ALTER TABLE friends
 CREATE INDEX idx_friends_requester ON friends (requester_id, status);
 CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
 
+-- Friend invites use ``users.username`` + ``friends`` only (no ``friend_tokens`` table).
+
 -- add table for board layout and max score
 CREATE TABLE IF NOT EXISTS games (
                                      id                INT AUTO_INCREMENT PRIMARY KEY,

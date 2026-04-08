@@ -22,6 +22,8 @@ running on https://localhost:5000
 
 ### Friend endpoints:
 
+<!-- Username-based invites: POST /request sends requester_id + username (no token table). -->
+
 - GET /api/friends/<user_id> — list accepted friends
 - GET /api/friends/<user_id>/requests — list pending (incoming/outgoing)
 - POST /api/friends/request — send friend request (JSON body: `requester_id`, `username` of the user to invite; username match is case-insensitive)

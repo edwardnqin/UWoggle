@@ -1,3 +1,7 @@
+/**
+ * Profile avatar → sidebar: Friends (add by username, list), Requests (in/out + accept/decline),
+ * Invites placeholder. Data from /api/friends/*; syncs when sidebar opens.
+ */
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -14,6 +18,7 @@ export default function ProfileDropdown({ user, onLogout }) {
   const [isClosing, setIsClosing] = useState(false);
   const [activeView, setActiveView] = useState("friends");
 
+  // Invite flow: POST /api/friends/request with current user's id + typed username.
   const [friendUsername, setFriendUsername] = useState("");
   const [addLoading, setAddLoading] = useState(false);
   const [addMessage, setAddMessage] = useState(null);
@@ -357,6 +362,7 @@ export default function ProfileDropdown({ user, onLogout }) {
               </button>
             </div>
 
+            {/* Success/error from add-friend or accept/decline (shared across tabs). */}
             {addMessage && (
               <p
                 className={`friendSidebar__bannerMsg ${

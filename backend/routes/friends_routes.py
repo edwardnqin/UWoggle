@@ -3,6 +3,9 @@ friends_routes.py
 
 Flask routes for Friend System endpoints.
 
+POST /request body uses ``requester_id`` + ``username`` (not tokens). The authenticated user's id
+should match ``requester_id`` in a hardened deployment; today the client sends it explicitly.
+
 Endpoints:
 - GET    /api/friends/<user_id>              -> list accepted friends (includes is_online)
 - GET    /api/friends/<user_id>/requests     -> list pending (incoming/outgoing)

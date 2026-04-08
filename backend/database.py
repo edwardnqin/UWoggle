@@ -1,3 +1,11 @@
+"""
+Database helpers: Flask-SQLAlchemy + raw pymysql for friend/room routes.
+
+Friend / room work (feature: username-based invites + MySQL config unification):
+- ``resolve_database_uri()`` is the single source for the DB URL (``DATABASE_URL`` or ``MYSQL_*``).
+- ``get_db_connection()`` parses that same URL so pymysql uses identical credentials/host as the ORM
+  (avoids 500s when SQLAlchemy used one password and raw pymysql used another).
+"""
 from __future__ import annotations
 
 import os

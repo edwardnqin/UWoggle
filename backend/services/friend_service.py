@@ -3,6 +3,9 @@ friend_service.py
 
 Service-layer functions for the Friend System.
 
+Invites are username-based: the client sends the addressee's ``username``; we resolve ``user_id``
+via ``LOWER(username)`` and insert ``friends`` with status PENDING (replaces the old token table).
+
 This module contains database logic for:
 - Listing accepted friends (with online status)
 - Listing incoming/outgoing pending requests
@@ -29,7 +32,7 @@ import pymysql
 # ---------------------------------------------------------------------------
 
 def _create_pending_request(conn, requester_id: int, addressee_id: int) -> Tuple[bool, str]:
-    """Insert a PENDING friend row if none exists between the two users."""
+    """Insert a PENDING friend row if none exists between the two users (shared by invite flows)."""
     exists_sql = """
                  SELECT id, status FROM friends
                  WHERE (requester_id=%s AND addressee_id=%s)
@@ -182,6 +185,7 @@ def send_request_by_username(conn, requester_id: int, username: str) -> Tuple[bo
     if not raw:
         return (False, "Username is required")
 
+    # Case-insensitive match so "Alice" and "alice" both resolve to the same account.
     with conn.cursor() as cur:
         cur.execute(
             "SELECT user_id FROM users WHERE LOWER(username) = LOWER(%s) LIMIT 1",

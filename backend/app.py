@@ -12,6 +12,7 @@ def create_app():
 
     # --- Config ---
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-secret-key")
+    # Shared with database.get_db_connection() so ORM and raw SQL (friends, rooms) stay in sync.
     app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
