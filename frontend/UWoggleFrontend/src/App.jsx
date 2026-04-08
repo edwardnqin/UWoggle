@@ -33,6 +33,42 @@ const VIEWS = {
   history: { title: "History", subtitle: "Recent games, best words, scores, streaks, win/loss, etc." },
 };
 
+const GUEST_PROMPTS = {
+  history: {
+    title: "History as a Guest",
+    description:
+      "You can still view history from this browser session, but guest history is cleared when you refresh or leave the page.",
+    bullets: [
+      "Continue as a guest to view games played in this session.",
+      "Log in or sign up to save history across sessions.",
+    ],
+  },
+  multiplayer: {
+    title: "Multiplayer as a Guest",
+    description:
+      "You can still create or join a multiplayer game as a guest. Signing in helps when you want a more complete account-based experience.",
+    bullets: [
+      "Guests can create or join a game with a temporary name.",
+      "Account-based social features can be added on top of multiplayer later.",
+    ],
+  },
+};
+
+function normalizeHistoryResponse(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data?.records)) return response.data.records;
+  if (Array.isArray(response?.data?.history)) return response.data.history;
+  if (Array.isArray(response?.records)) return response.records;
+  if (Array.isArray(response?.history)) return response.history;
+  return [];
+}
+
+function extractCurrentUser(response) {
+  if (response?.data?.user) return response.data.user;
+  if (response?.user) return response.user;
+  return null;
+}
+
 export default function App() {
   const [view, setView] = useState("home");
   const [timerDuration, setTimerDuration] = useState(null);
@@ -46,6 +82,8 @@ export default function App() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
+  const [guestPromptType, setGuestPromptType] = useState(null);
 
   const [fbCategory, setFbCategory] = useState("suggestion");
   const [fbMessage, setFbMessage] = useState("");
@@ -75,6 +113,7 @@ export default function App() {
   const [multiplayerRole, setMultiplayerRole] = useState(null);
 
   const current = VIEWS[view] || { title: null, subtitle: null };
+  const guestPrompt = guestPromptType ? GUEST_PROMPTS[guestPromptType] : null;
 
   function enterMultiplayerGame(gameId, role) {
     setMultiplayerGameId(gameId);
@@ -105,10 +144,15 @@ export default function App() {
   useEffect(() => {
     async function loadCurrentUser() {
       try {
-        const data = await getCurrentUser();
-        if (data?.user) {
-          setUser(data.user);
+        const response = await getCurrentUser();
+        const currentUser = extractCurrentUser(response);
+
+        if (currentUser) {
+          setUser(currentUser);
+          return;
         }
+
+        setUser(null);
       } catch {
         setUser(null);
       }
@@ -129,14 +173,8 @@ export default function App() {
       setHistoryError("");
 
       try {
-        const data = await fetchGameHistory();
-        if (Array.isArray(data)) {
-          setSavedHistory(data);
-        } else if (Array.isArray(data?.history)) {
-          setSavedHistory(data.history);
-        } else {
-          setSavedHistory([]);
-        }
+        const response = await fetchGameHistory();
+        setSavedHistory(normalizeHistoryResponse(response));
       } catch {
         setHistoryError("Could not load history.");
         setSavedHistory([]);
@@ -166,6 +204,36 @@ export default function App() {
     setSuSuccess("");
   }
 
+  function openGuestPrompt(type) {
+    setGuestPromptType(type);
+    setGuestPromptOpen(true);
+  }
+
+  function closeGuestPrompt() {
+    setGuestPromptOpen(false);
+    setGuestPromptType(null);
+  }
+
+  function continueAsGuest() {
+    if (guestPromptType === "history") {
+      setView("history");
+    } else if (guestPromptType === "multiplayer") {
+      setView("online");
+    }
+
+    closeGuestPrompt();
+  }
+
+  function openLoginFromGuestPrompt() {
+    closeGuestPrompt();
+    setLoginOpen(true);
+  }
+
+  function openSignupFromGuestPrompt() {
+    closeGuestPrompt();
+    setSignupOpen(true);
+  }
+
   function addGuestHistoryRecord(stats) {
     if (user || !stats) return;
 
@@ -184,13 +252,8 @@ export default function App() {
 
     try {
       await saveGameHistory(stats);
-      const data = await fetchGameHistory();
-
-      if (Array.isArray(data)) {
-        setSavedHistory(data);
-      } else if (Array.isArray(data?.history)) {
-        setSavedHistory(data.history);
-      }
+      const response = await fetchGameHistory();
+      setSavedHistory(normalizeHistoryResponse(response));
     } catch {
       setHistoryError("Could not save game history.");
     }
@@ -205,14 +268,19 @@ export default function App() {
 
   function handleHistoryOpen() {
     if (!user) {
-      window.alert(
-        "You are not logged in. Sign up or log in to save history permanently. Guest game history will stay until you refresh or leave the page."
-      );
+      openGuestPrompt("history");
+      return;
     }
+
     setView("history");
   }
 
   function handleMultiplayerOpen() {
+    if (!user) {
+      openGuestPrompt("multiplayer");
+      return;
+    }
+
     setView("online");
   }
 
@@ -376,6 +444,9 @@ export default function App() {
           <MultiplayerLobby
             onBack={() => setView("home")}
             onEnterGame={enterMultiplayerGame}
+            onOpenLogin={() => setLoginOpen(true)}
+            onOpenSignup={() => setSignupOpen(true)}
+            user={user}
           />
         ) : view === "multiplayerGame" ? (
           <MultiplayerGame
@@ -488,6 +559,34 @@ export default function App() {
         </div>
       </Modal>
 
+      <Modal title="Guest access" open={guestPromptOpen} onClose={closeGuestPrompt}>
+        {guestPrompt && (
+          <>
+            <div className="modalTextBlock">
+              <p className="modalLead">{guestPrompt.title}</p>
+              <p>{guestPrompt.description}</p>
+              <ul className="modalBulletList">
+                {guestPrompt.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="modalActions modalActions--wrap modalActions--start">
+              <HudButton variant="miniCancel" onClick={continueAsGuest}>
+                Continue as Guest
+              </HudButton>
+              <HudButton variant="mini" onClick={openLoginFromGuestPrompt}>
+                Log In
+              </HudButton>
+              <HudButton variant="mini" onClick={openSignupFromGuestPrompt}>
+                Sign Up
+              </HudButton>
+            </div>
+          </>
+        )}
+      </Modal>
+
       <Modal title="Feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)}>
         <div className="field">
           <label htmlFor="fb-category">Category</label>
@@ -518,17 +617,15 @@ export default function App() {
           <label htmlFor="fb-contact">Contact (optional)</label>
           <input
             id="fb-contact"
-            placeholder="Email / Discord"
             value={fbContact}
             onChange={(e) => setFbContact(e.target.value)}
+            placeholder="Email, Discord, etc."
           />
         </div>
 
-        {fbStatus === "sent" ? (
-          <div className="modalHint">Thanks! Your feedback was sent.</div>
-        ) : fbStatus === "error" ? (
-          <div className="modalHint">Could not send feedback. Please try again.</div>
-        ) : null}
+        {fbStatus?.message && (
+          <p className={fbStatus.ok ? "formSuccess" : "formError"}>{fbStatus.message}</p>
+        )}
 
         <div className="modalActions">
           <HudButton variant="miniCancel" onClick={() => setFeedbackOpen(false)}>
@@ -537,35 +634,59 @@ export default function App() {
           <HudButton
             variant="mini"
             onClick={async () => {
+              setFbStatus(null);
+
               if (!fbMessage.trim()) {
-                setFbStatus("error");
+                setFbStatus({
+                  state: "error",
+                  ok: false,
+                  message: "Please enter a message before sending.",
+                });
                 return;
               }
 
               try {
-                setFbStatus("sending");
+                setFbStatus({ state: "sending", ok: true, message: "" });
+
                 const resp = await fetch("/api/feedback", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   credentials: "include",
                   body: JSON.stringify({
                     category: fbCategory,
-                    message: fbMessage,
-                    contact: fbContact || null,
+                    message: fbMessage.trim(),
+                    contact: fbContact.trim(),
                   }),
                 });
 
-                if (!resp.ok) throw new Error("bad response");
+                const data = await resp.json().catch(() => ({}));
 
-                setFbStatus("sent");
-                setFbMessage("");
-                setFbContact("");
+                if (resp.ok) {
+                  setFbStatus({
+                    state: "sent",
+                    ok: true,
+                    message: data.message || "Thanks for the feedback!",
+                  });
+                  setFbMessage("");
+                  setFbContact("");
+                  setFbCategory("suggestion");
+                } else {
+                  setFbStatus({
+                    state: "error",
+                    ok: false,
+                    message: data.error || "Could not send feedback.",
+                  });
+                }
               } catch {
-                setFbStatus("error");
+                setFbStatus({
+                  state: "error",
+                  ok: false,
+                  message: "Could not reach the server.",
+                });
               }
             }}
           >
-            {fbStatus === "sending" ? "Sending…" : "Send"}
+            {fbStatus?.state === "sending" ? "Sending…" : "Send"}
           </HudButton>
         </div>
       </Modal>
