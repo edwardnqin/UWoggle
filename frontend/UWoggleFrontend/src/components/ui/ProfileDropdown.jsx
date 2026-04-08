@@ -1,4 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  fetchFriends,
+  fetchFriendRequests,
+  sendFriendRequest,
+  respondToFriendRequest,
+} from "../../services/api";
 
 const CLOSE_ANIMATION_MS = 0;
 
@@ -6,6 +13,63 @@ export default function ProfileDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [activeView, setActiveView] = useState("friends");
+
+  const [friendUsername, setFriendUsername] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [addMessage, setAddMessage] = useState(null);
+
+  const [friendsList, setFriendsList] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+
+  const [requestsData, setRequestsData] = useState({ incoming: [], outgoing: [] });
+  const [requestsLoading, setRequestsLoading] = useState(false);
+
+  const [respondId, setRespondId] = useState(null);
+
+  const userId = user?.user_id;
+
+  const loadFriends = useCallback(async () => {
+    if (userId == null) return;
+    setFriendsLoading(true);
+    try {
+      const { ok, data } = await fetchFriends(userId);
+      if (ok && Array.isArray(data)) {
+        setFriendsList(data);
+      } else {
+        setFriendsList([]);
+      }
+    } catch {
+      setFriendsList([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  }, [userId]);
+
+  const loadRequests = useCallback(async () => {
+    if (userId == null) return;
+    setRequestsLoading(true);
+    try {
+      const { ok, data } = await fetchFriendRequests(userId);
+      if (ok && data && typeof data === "object") {
+        setRequestsData({
+          incoming: Array.isArray(data.incoming) ? data.incoming : [],
+          outgoing: Array.isArray(data.outgoing) ? data.outgoing : [],
+        });
+      } else {
+        setRequestsData({ incoming: [], outgoing: [] });
+      }
+    } catch {
+      setRequestsData({ incoming: [], outgoing: [] });
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!open || userId == null) return;
+    loadFriends();
+    loadRequests();
+  }, [open, userId, loadFriends, loadRequests]);
 
   function closeSidebar() {
     setIsClosing(true);
@@ -39,32 +103,163 @@ export default function ProfileDropdown({ user, onLogout }) {
     };
   }, [open]);
 
-  
+  async function handleAddFriend(e) {
+    e.preventDefault();
+    setAddMessage(null);
+    const name = friendUsername.trim();
+    if (!name) {
+      setAddMessage({ type: "error", text: "Enter a username." });
+      return;
+    }
+    if (userId == null) return;
 
-  
+    setAddLoading(true);
+    try {
+      const { ok, data } = await sendFriendRequest(userId, name);
+      if (ok) {
+        setAddMessage({ type: "success", text: data.message || "Friend request sent." });
+        setFriendUsername("");
+        await loadRequests();
+      } else {
+        setAddMessage({ type: "error", text: data.error || "Could not send request." });
+      }
+    } catch {
+      setAddMessage({ type: "error", text: "Could not reach the server." });
+    } finally {
+      setAddLoading(false);
+    }
+  }
+
+  async function handleRespond(requestId, action) {
+    setRespondId(requestId);
+    try {
+      const { ok, data } = await respondToFriendRequest(requestId, action);
+      if (ok) {
+        await loadRequests();
+        await loadFriends();
+      } else {
+        setAddMessage({ type: "error", text: data?.error || "Could not update request." });
+      }
+    } catch {
+      setAddMessage({ type: "error", text: "Could not reach the server." });
+    } finally {
+      setRespondId(null);
+    }
+  }
 
   const username = user?.username || user?.email || "User";
-  const userId = user?.user_id ?? "—";
+  const displayUserId = userId ?? "—";
 
   function renderContent() {
     if (activeView === "friends") {
       return (
         <div className="friendSidebar__panel">
-          <h3 className="friendSidebar__sectionTitle">Friends</h3>
-          <p className="friendSidebar__placeholder">
-            Friends list template goes here.
+          <h3 className="friendSidebar__sectionTitle">Add a friend</h3>
+          <p className="friendSidebar__hint">
+            Enter their UWoggle username. They will see the request under the Requests tab.
           </p>
+          <form className="friendSidebar__form" onSubmit={handleAddFriend}>
+            <label className="friendSidebar__label" htmlFor="friendUsernameInput">
+              Username
+            </label>
+            <input
+              id="friendUsernameInput"
+              className="friendSidebar__input"
+              type="text"
+              autoComplete="username"
+              maxLength={30}
+              placeholder="Their username"
+              value={friendUsername}
+              onChange={(e) => setFriendUsername(e.target.value)}
+              disabled={addLoading}
+            />
+            <button
+              type="submit"
+              className="friendSidebar__btnPrimary"
+              disabled={addLoading || userId == null}
+            >
+              {addLoading ? "Sending…" : "Add friend"}
+            </button>
+          </form>
+
+          <h3 className="friendSidebar__sectionTitle friendSidebar__sectionTitle--spaced">Friends</h3>
+          {friendsLoading ? (
+            <p className="friendSidebar__muted">Loading…</p>
+          ) : friendsList.length === 0 ? (
+            <p className="friendSidebar__muted">No friends yet.</p>
+          ) : (
+            <ul className="friendSidebar__list">
+              {friendsList.map((f) => (
+                <li key={f.user_id} className="friendSidebar__listItem">
+                  <span className="friendSidebar__listName">{f.username}</span>
+                  {f.is_online ? (
+                    <span className="friendSidebar__badge friendSidebar__badge--online">Online</span>
+                  ) : (
+                    <span className="friendSidebar__badge">Offline</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       );
     }
 
     if (activeView === "requests") {
+      const { incoming, outgoing } = requestsData;
       return (
         <div className="friendSidebar__panel">
-          <h3 className="friendSidebar__sectionTitle">Friend Requests</h3>
-          <p className="friendSidebar__placeholder">
-            Friend requests template goes here.
-          </p>
+          <h3 className="friendSidebar__sectionTitle">Incoming</h3>
+          {requestsLoading ? (
+            <p className="friendSidebar__muted">Loading…</p>
+          ) : incoming.length === 0 ? (
+            <p className="friendSidebar__muted">No incoming requests.</p>
+          ) : (
+            <ul className="friendSidebar__requestList">
+              {incoming.map((r) => (
+                <li key={r.request_id} className="friendSidebar__requestRow">
+                  <div>
+                    <span className="friendSidebar__listName">{r.from_username}</span>
+                    <span className="friendSidebar__requestMeta"> wants to be friends</span>
+                  </div>
+                  <div className="friendSidebar__requestActions">
+                    <button
+                      type="button"
+                      className="friendSidebar__btnInline friendSidebar__btnInline--accept"
+                      disabled={respondId === r.request_id}
+                      onClick={() => handleRespond(r.request_id, "ACCEPT")}
+                    >
+                      {respondId === r.request_id ? "…" : "Accept"}
+                    </button>
+                    <button
+                      type="button"
+                      className="friendSidebar__btnInline"
+                      disabled={respondId === r.request_id}
+                      onClick={() => handleRespond(r.request_id, "DECLINE")}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h3 className="friendSidebar__sectionTitle friendSidebar__sectionTitle--spaced">Outgoing</h3>
+          {requestsLoading ? (
+            <p className="friendSidebar__muted">Loading…</p>
+          ) : outgoing.length === 0 ? (
+            <p className="friendSidebar__muted">No outgoing requests.</p>
+          ) : (
+            <ul className="friendSidebar__list">
+              {outgoing.map((r) => (
+                <li key={r.request_id} className="friendSidebar__listItem">
+                  <span className="friendSidebar__listName">{r.to_username}</span>
+                  <span className="friendSidebar__requestMeta"> pending</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       );
     }
@@ -72,9 +267,7 @@ export default function ProfileDropdown({ user, onLogout }) {
     return (
       <div className="friendSidebar__panel">
         <h3 className="friendSidebar__sectionTitle">Game Invites</h3>
-        <p className="friendSidebar__placeholder">
-          Game invites template goes here.
-        </p>
+        <p className="friendSidebar__placeholder">Game invites template goes here.</p>
       </div>
     );
   }
@@ -125,7 +318,7 @@ export default function ProfileDropdown({ user, onLogout }) {
                 <div id="friendSidebarTitle" className="friendSidebar__username">
                   {username}
                 </div>
-                <div className="friendSidebar__id">ID: {userId}</div>
+                <div className="friendSidebar__id">ID: {displayUserId}</div>
               </div>
 
               <button
@@ -163,6 +356,17 @@ export default function ProfileDropdown({ user, onLogout }) {
                 Invites
               </button>
             </div>
+
+            {addMessage && (
+              <p
+                className={`friendSidebar__bannerMsg ${
+                  addMessage.type === "error" ? "friendSidebar__inlineMsg--error" : "friendSidebar__inlineMsg--success"
+                }`}
+                role="status"
+              >
+                {addMessage.text}
+              </p>
+            )}
 
             <div className="friendSidebar__content">{renderContent()}</div>
 

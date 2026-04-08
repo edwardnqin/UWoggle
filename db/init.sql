@@ -50,16 +50,6 @@ ALTER TABLE friends
 CREATE INDEX idx_friends_requester ON friends (requester_id, status);
 CREATE INDEX idx_friends_addressee ON friends (addressee_id, status);
 
--- Friend tokens for token-based friend requests (15 min expiry, reusable)
-CREATE TABLE IF NOT EXISTS friend_tokens (
-    id         INT          AUTO_INCREMENT PRIMARY KEY,
-    user_id    INT          NOT NULL UNIQUE,
-    token      VARCHAR(10)  NOT NULL UNIQUE,
-    expires_at DATETIME     NOT NULL,
-    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
 -- add table for board layout and max score
 CREATE TABLE IF NOT EXISTS games (
                                      id                INT AUTO_INCREMENT PRIMARY KEY,

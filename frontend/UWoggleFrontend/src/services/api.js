@@ -69,6 +69,32 @@ export async function fetchGameHistory() {
 }
 
 // ---------------------------------------------------------------------------
+// Friends
+// ---------------------------------------------------------------------------
+
+export async function fetchFriends(userId) {
+  return request(`/friends/${userId}`, { method: "GET" });
+}
+
+export async function fetchFriendRequests(userId) {
+  return request(`/friends/${userId}/requests`, { method: "GET" });
+}
+
+export async function sendFriendRequest(requesterId, username) {
+  return request("/friends/request", {
+    method: "POST",
+    body: JSON.stringify({ requester_id: requesterId, username }),
+  });
+}
+
+export async function respondToFriendRequest(requestId, action) {
+  return request(`/friends/${requestId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------
 

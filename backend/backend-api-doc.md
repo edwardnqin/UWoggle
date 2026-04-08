@@ -24,7 +24,7 @@ running on https://localhost:5000
 
 - GET /api/friends/<user_id> — list accepted friends
 - GET /api/friends/<user_id>/requests — list pending (incoming/outgoing)
-- POST /api/friends/request — send friend request
+- POST /api/friends/request — send friend request (JSON body: `requester_id`, `username` of the user to invite; username match is case-insensitive)
 - POST /api/friends/<request_id>/respond — accept/decline request
 - DELETE /api/friends/remove — remove accepted friend
 
