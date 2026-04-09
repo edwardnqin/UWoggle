@@ -56,6 +56,9 @@ public class GameSession {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
@@ -117,6 +120,9 @@ public class GameSession {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
 
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }

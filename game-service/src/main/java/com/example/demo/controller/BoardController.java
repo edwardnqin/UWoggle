@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/board")
+@RequestMapping("/api/board")
 public class BoardController {
 
     private final BoardGenerationService boardService;
@@ -38,9 +38,9 @@ public class BoardController {
         int maxScore = BoggleSolver.maxScore(words);
 
         return Map.of(
-            "board", board,
-            "words", words,
-            "maxScore", maxScore
+                "board", board,
+                "words", words,
+                "maxScore", maxScore
         );
     }
 }
