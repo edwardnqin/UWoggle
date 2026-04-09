@@ -339,7 +339,6 @@ class TestAuthServiceJWT:
 
     def test_create_jwt_returns_string(self, app_ctx):
         from services.auth_service import create_jwt
-        from flask import current_app
 
         # Need an app context with SECRET_KEY set
         fake_user = MagicMock()
