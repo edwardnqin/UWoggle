@@ -161,14 +161,6 @@ export default function App() {
   loadCurrentUser();
 }, []);
 
-        setUser(null);
-      } catch {
-        setUser(null);
-      }
-    }
-
-    loadCurrentUser();
-  }, []);
 
   useEffect(() => {
     async function loadHistory() {
