@@ -98,6 +98,13 @@
     text-align:left;
   }
   .hintTitle{ color: rgba(255,255,255,.96); font-weight: 950; margin-bottom: 8px; }
+
+  .hintCardActions{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
   .hintList{ margin: 0; padding-left: 18px; color: rgba(255,255,255,.9); font-weight: 650; line-height: 1.55; }
 
   .topRow{
