@@ -142,15 +142,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    async function loadCurrentUser() {
-      try {
-        const response = await getCurrentUser();
-        const currentUser = extractCurrentUser(response);
+  async function loadCurrentUser() {
+    try {
+      const response = await getCurrentUser();
+      const currentUser = extractCurrentUser(response);
 
-        if (currentUser) {
-          setUser(currentUser);
-          return;
-        }
+      if (currentUser) {
+        setUser(currentUser);
+        return;
+      }
+
+      setUser(null);
+    } catch {
+      setUser(null);
+    }
+  }
+
+  loadCurrentUser();
+}, []);
 
         setUser(null);
       } catch {
