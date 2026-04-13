@@ -3,11 +3,13 @@ friends_routes.py
 
 Flask routes for Friend System endpoints.
 
+POST /request body uses ``requester_id`` + ``username`` (not tokens). The authenticated user's id
+should match ``requester_id`` in a hardened deployment; today the client sends it explicitly.
+
 Endpoints:
 - GET    /api/friends/<user_id>              -> list accepted friends (includes is_online)
 - GET    /api/friends/<user_id>/requests     -> list pending (incoming/outgoing)
-- POST   /api/friends/generate-token         -> generate a 15-min reusable friend token
-- POST   /api/friends/request                -> send friend request via token
+- POST   /api/friends/request                -> send friend request by username
 - POST   /api/friends/<request_id>/respond   -> accept/decline request
 - DELETE /api/friends/remove                 -> remove accepted friend
 
@@ -22,8 +24,7 @@ from database import get_db_connection
 from services.friend_service import (
     list_friends,
     list_requests,
-    generate_friend_token,
-    send_request_by_token,
+    send_request_by_username,
     respond_request,
     remove_friend,
 )
@@ -63,57 +64,31 @@ def get_requests(user_id: int):
         conn.close()
 
 
-@friends_bp.post("/generate-token")
-def post_generate_token():
-    """
-    Generate a reusable 6-character friend token valid for 15 minutes.
-
-    Expected JSON body:
-        { "user_id": <int> }
-
-    Returns:
-        200: { "token": "X7K2P9", "expires_at": "..." }
-        400: missing user_id
-    """
-    payload = request.get_json(silent=True) or {}
-    user_id = payload.get("user_id")
-
-    if user_id is None:
-        return jsonify({"error": "user_id is required"}), 400
-
-    conn = get_db_connection()
-    try:
-        result = generate_friend_token(conn, int(user_id))
-        return jsonify(result), 200
-    finally:
-        conn.close()
-
-
 @friends_bp.post("/request")
 def post_request():
     """
-    Send a friend request using a friend token.
+    Send a friend request to a user by username.
 
     Expected JSON body:
         {
           "requester_id": <int>,
-          "token": <str>
+          "username": <str>
         }
 
     Returns:
         201: request created successfully
-        400: invalid/expired token, already friends, self-add, etc.
+        400: unknown user, self-add, duplicate, etc.
     """
     payload = request.get_json(silent=True) or {}
     requester_id = payload.get("requester_id")
-    token = payload.get("token")
+    username = payload.get("username")
 
-    if requester_id is None or not token:
-        return jsonify({"error": "requester_id and token are required"}), 400
+    if requester_id is None or username is None or (isinstance(username, str) and not username.strip()):
+        return jsonify({"error": "requester_id and username are required"}), 400
 
     conn = get_db_connection()
     try:
-        ok, msg = send_request_by_token(conn, int(requester_id), token)
+        ok, msg = send_request_by_username(conn, int(requester_id), str(username))
         if not ok:
             return jsonify({"error": msg}), 400
         return jsonify({"message": msg}), 201
