@@ -1,12 +1,14 @@
 import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
 
 export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
   const [score, setScore] = useState(0);
   const [board, setBoard] = useState([]);
+
+  const maxScore = useRef(0);
 
   const handleCommitWord = useCallback((word, points) => {
     setScore((currentScore) => currentScore + points);
@@ -16,6 +18,10 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const handleBoardReady = useCallback(({ board: nextBoard }) => {
     setBoard(nextBoard);
   }, []);
+
+  function handleMaxScore (value) {
+    maxScore.current = value;
+  }
 
   return (
     <div className="screen">
@@ -27,7 +33,7 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
 
         <div className="playMain">
           <div className="playBoard">
-            <Grid onCommitWord={handleCommitWord} onBoardReady={handleBoardReady} />
+            <Grid onCommitWord={handleCommitWord} onBoardReady={handleBoardReady} onSetMaxScore={handleMaxScore} />
           </div>
 
           <div className="playSidebar">
@@ -69,8 +75,11 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
       <HudButton
         className="btn--fit"
         onClick={() =>
-          onGiveUp?.({
+          {
+            const maxPossibleScore = maxScore.current;
+            onGiveUp?.({
             score,
+            maxPossibleScore,
             foundWords,
             totalWords: foundWords.length,
             timerDuration: null,
@@ -78,6 +87,7 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
             board,
             mode: "Unlimited",
           })
+          }
         }
         ariaLabel="Give up"
       >
