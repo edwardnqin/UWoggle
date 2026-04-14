@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
-function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = null, skipFetch = false }) {
+export default function Grid({ onCommitWord, onBoardReady, onSetMaxScore, initialBoard = null, initialWords = null, skipFetch = false }) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
   const [status, setStatus] = useState("Loading board...");
@@ -59,6 +59,9 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
         board: res.data.board,
         totalWords: Object.keys(normalizedWords).length,
       });
+
+      // After obtaining maxScore of the board from the API call, save it to the database upon game completion.
+      onSetMaxScore(res.data.maxScore);
 
       setStatus("Board ready.");
     });
@@ -387,6 +390,4 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
       </div>
     </div>
   );
-}
-
-export default React.memo(Grid);
+};

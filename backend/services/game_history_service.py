@@ -60,6 +60,7 @@ def save_game_history(user, payload):
     board = payload.get("board") or []
     found_words = payload.get("foundWords") or []
     score = int(payload.get("score") or 0)
+    maxScore = int(payload.get("maxPossibleScore") or 0)
     timer_duration = payload.get("timerDuration")
     timer_seconds = int(timer_duration * 60) if timer_duration else 0
     completed_at = datetime.now(timezone.utc)
@@ -70,7 +71,7 @@ def save_game_history(user, payload):
         status="COMPLETED",
         timer_seconds=timer_seconds,
         board_layout=_serialize_board(board),
-        max_score=score,
+        max_score=maxScore,
         final_score=score,
         found_words=_serialize_words(found_words),
         completed=True,
