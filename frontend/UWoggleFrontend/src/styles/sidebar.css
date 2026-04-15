@@ -281,6 +281,36 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .friendSidebar__friendRowLeft {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .friendSidebar__btnRemove {
+    flex-shrink: 0;
+    padding: 0.3rem 0.55rem;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 100, 100, 0.45);
+    background: rgba(160, 50, 50, 0.25);
+    color: #ffc9c9;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8rem;
+  }
+
+  .friendSidebar__btnRemove:hover:not(:disabled) {
+    background: rgba(180, 60, 60, 0.4);
+  }
+
+  .friendSidebar__btnRemove:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
   .friendSidebar__listName {
     font-weight: 600;
     color: rgba(255, 255, 255, 0.96);
