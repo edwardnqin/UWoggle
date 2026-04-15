@@ -95,6 +95,14 @@ export async function respondToFriendRequest(requestId, action) {
   });
 }
 
+/** DELETE /api/friends/remove — logged-in user removes an accepted friend (cookie auth). */
+export async function removeFriend(friendId) {
+  return request("/friends/remove", {
+    method: "DELETE",
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------

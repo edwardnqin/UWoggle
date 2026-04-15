@@ -9,6 +9,7 @@ import {
   fetchFriendRequests,
   sendFriendRequest,
   respondToFriendRequest,
+  removeFriend,
 } from "../../services/api";
 
 const CLOSE_ANIMATION_MS = 0;
@@ -30,6 +31,7 @@ export default function ProfileDropdown({ user, onLogout }) {
   const [requestsLoading, setRequestsLoading] = useState(false);
 
   const [respondId, setRespondId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
   const userId = user?.user_id;
 
@@ -152,6 +154,27 @@ export default function ProfileDropdown({ user, onLogout }) {
     }
   }
 
+  async function handleRemoveFriend(friendUserId) {
+    setRemovingId(friendUserId);
+    setAddMessage(null);
+    try {
+      const { ok, data } = await removeFriend(friendUserId);
+      if (ok) {
+        setAddMessage({ type: "success", text: data.message || "Friend removed." });
+        await loadFriends();
+      } else {
+        setAddMessage({
+          type: "error",
+          text: data?.error || "Could not remove friend.",
+        });
+      }
+    } catch {
+      setAddMessage({ type: "error", text: "Could not reach the server." });
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
   const username = user?.username || user?.email || "User";
   const displayUserId = userId ?? "—";
 
@@ -196,12 +219,23 @@ export default function ProfileDropdown({ user, onLogout }) {
             <ul className="friendSidebar__list">
               {friendsList.map((f) => (
                 <li key={f.user_id} className="friendSidebar__listItem">
-                  <span className="friendSidebar__listName">{f.username}</span>
-                  {f.is_online ? (
-                    <span className="friendSidebar__badge friendSidebar__badge--online">Online</span>
-                  ) : (
-                    <span className="friendSidebar__badge">Offline</span>
-                  )}
+                  <div className="friendSidebar__friendRowLeft">
+                    <span className="friendSidebar__listName">{f.username}</span>
+                    {f.is_online ? (
+                      <span className="friendSidebar__badge friendSidebar__badge--online">Online</span>
+                    ) : (
+                      <span className="friendSidebar__badge">Offline</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="friendSidebar__btnRemove"
+                    disabled={removingId === f.user_id || userId == null}
+                    aria-label={`Remove ${f.username} from friends`}
+                    onClick={() => handleRemoveFriend(f.user_id)}
+                  >
+                    {removingId === f.user_id ? "…" : "Remove"}
+                  </button>
                 </li>
               ))}
             </ul>
