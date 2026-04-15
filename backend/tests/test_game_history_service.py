@@ -27,7 +27,7 @@ def app():
     application.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "SECRET_KEY": "test-secret",
+        "SECRET_KEY": "test-secret-key-that-is-long-enough-for-sha256",
     })
     return application
 
