@@ -89,6 +89,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
         if (session.status !== "ACTIVE") return;
         if (session.completed) return;
 
+        // Game starts here
         const timerId = window.setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev === null) return prev;
@@ -171,14 +172,16 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
                 </div>
 
                 <div className="playMain">
-                    <div className="playBoard">
-                        <Grid
-                            onCommitWord={handleCommitWord}
-                            initialBoard={session.board}
-                            initialWords={session.words}
-                            skipFetch={true}
-                        />
-                    </div>
+                    {session.status === "ACTIVE" && (
+                        <div className="playBoard">
+                            <Grid
+                                onCommitWord={handleCommitWord}
+                                initialBoard={session.board}
+                                initialWords={session.words}
+                                skipFetch={true}
+                            />
+                        </div>
+                    )}
 
                     <div className="playSidebar">
                         <div className="hintCard scoreboardPanel">
