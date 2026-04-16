@@ -68,6 +68,47 @@ export async function fetchGameHistory() {
   return request("/games/history");
 }
 
+export async function deleteGameHistory(recordId) {
+  return request(`/games/history/${recordId}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Friends — profile sidebar: list friends, pending requests, invite by username (POST /request).
+// ---------------------------------------------------------------------------
+
+export async function fetchFriends(userId) {
+  return request(`/friends/${userId}`, { method: "GET" });
+}
+
+export async function fetchFriendRequests(userId) {
+  return request(`/friends/${userId}/requests`, { method: "GET" });
+}
+
+/** POST /api/friends/request — ``username`` is the other user's UWoggle login name. */
+export async function sendFriendRequest(requesterId, username) {
+  return request("/friends/request", {
+    method: "POST",
+    body: JSON.stringify({ requester_id: requesterId, username }),
+  });
+}
+
+export async function respondToFriendRequest(requestId, action) {
+  return request(`/friends/${requestId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+}
+
+/** DELETE /api/friends/remove — logged-in user removes an accepted friend (cookie auth). */
+export async function removeFriend(friendId) {
+  return request("/friends/remove", {
+    method: "DELETE",
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------

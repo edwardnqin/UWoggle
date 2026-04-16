@@ -60,6 +60,7 @@ def save_game_history(user, payload):
     board = payload.get("board") or []
     found_words = payload.get("foundWords") or []
     score = int(payload.get("score") or 0)
+    maxScore = int(payload.get("maxPossibleScore") or 0)
     timer_duration = payload.get("timerDuration")
     timer_seconds = int(timer_duration * 60) if timer_duration else 0
     completed_at = datetime.now(timezone.utc)
@@ -70,7 +71,7 @@ def save_game_history(user, payload):
         status="COMPLETED",
         timer_seconds=timer_seconds,
         board_layout=_serialize_board(board),
-        max_score=score,
+        max_score=maxScore,
         final_score=score,
         found_words=_serialize_words(found_words),
         completed=True,
@@ -112,3 +113,24 @@ def get_game_history_for_user(user):
         .all()
     )
     return [format_game_record(game) for game in games]
+
+
+
+def delete_game_history_record(user, game_id):
+    game = (
+        Game.query.filter_by(id=game_id, user_id=user.user_id, completed=True)
+        .first()
+    )
+
+    if not game:
+        return False
+
+    db.session.delete(game)
+    db.session.flush()
+
+    remaining_games = Game.query.filter_by(user_id=user.user_id, completed=True).all()
+    user.number_of_games_played = len(remaining_games)
+    user.high_score = max((int(g.final_score or 0) for g in remaining_games), default=0)
+
+    db.session.commit()
+    return True
