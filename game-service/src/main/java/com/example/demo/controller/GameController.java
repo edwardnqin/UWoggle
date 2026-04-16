@@ -1,45 +1,46 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.CreateGameRequest;
-import com.example.demo.dto.SubmitScoreRequest;
-import com.example.demo.service.GameSessionService;
-import org.springframework.web.bind.annotation.*;
+import com.example.demo.service.BoardGenerationService;
+import com.example.demo.service.BoggleSolver;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/games")
-public class GameController {
+@RequestMapping("/api/board")
+public class BoardController {
 
-    private final GameSessionService gameSessionService;
+    private final BoardGenerationService boardService;
+    private final BoggleSolver solver;
 
-    public GameController(GameSessionService gameSessionService) {
-        this.gameSessionService = gameSessionService;
+    public BoardController(BoardGenerationService boardService, BoggleSolver solver) {
+        this.boardService = boardService;
+        this.solver = solver;
     }
 
-    @PostMapping
-    public Map<String, Object> createGame(@RequestBody CreateGameRequest request) {
-        return gameSessionService.createGame(request);
-    }
+    @GetMapping
+    public Map<String, Object> getBoard() {
+        char[][] raw = boardService.generate();
+        List<List<String>> board = new ArrayList<>();
+        for (char[] row : raw) {
+            List<String> cells = new ArrayList<>();
+            for (char c : row) {
+                cells.add(c == 'Q' ? "QU" : String.valueOf(c));
+            }
+            board.add(cells);
+        }
 
-    @PostMapping("/join/{joinCode}")
-    public Map<String, Object> joinGame(
-            @PathVariable String joinCode,
-            @RequestParam(required = false) String guestName
-    ) {
-        return gameSessionService.joinGame(joinCode, guestName);
-    }
+        Map<String, Integer> words = solver.solve(raw);
+        int maxScore = BoggleSolver.maxScore(words);
 
-    @GetMapping("/{id}")
-    public Map<String, Object> getGame(@PathVariable Long id) {
-        return gameSessionService.getGame(id);
-    }
-
-    @PostMapping("/{id}/score")
-    public Map<String, Object> submitScore(
-            @PathVariable Long id,
-            @RequestBody SubmitScoreRequest request
-    ) {
-        return gameSessionService.submitScore(id, request);
+        return Map.of(
+                "board", board,
+                "words", words,
+                "maxScore", maxScore
+        );
     }
 }
