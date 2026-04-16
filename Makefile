@@ -26,7 +26,7 @@ FRONTEND_DIR := $(ROOT_DIR)/frontend/UWoggleFrontend
 # How long to wait for MySQL to be ready before starting the backend
 DB_WAIT_SECS := 20
 
-.PHONY: all db backend game frontend stop logs clean install seed
+.PHONY: all db backend game frontend stop logs clean install seed test
 
 # ── Default target: full stack ────────────────────────────────────────────────
 all: db
@@ -109,3 +109,13 @@ seed:
 			      -p$$(grep MYSQL_PASSWORD .env | cut -d= -f2) \
 			      uwoggle < seed.sql
 	@echo "✅  Seed complete."
+
+# ── Run all tests ─────────────────────────────────────────────────────────────
+test:
+	@echo "🧪  Running backend tests..."
+	cd $(BACKEND_DIR) && \
+		source .venv/bin/activate && \
+		PYTHONPATH=$(BACKEND_DIR) pytest tests/ -v
+	@echo "🧪  Running Java game-service tests..."
+	cd $(GAME_DIR) && ./gradlew test
+	@echo "✅  All tests complete."

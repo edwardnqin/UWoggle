@@ -37,7 +37,7 @@ export default function History({ onBack, records, user, loading, error }) {
         <div className="pageSubtitle">
           {user
             ? "Your saved games across sessions"
-            : "Guest history lasts only for this session and clears on refresh or exit."}
+            : "You can browse history from this session as a guest. Sign in to keep it across sessions."}
         </div>
 
         <div className="hintCard historyPanel">
@@ -54,7 +54,7 @@ export default function History({ onBack, records, user, loading, error }) {
           ) : records.length === 0 ? (
             <ul className="hintList">
               <li>No game history yet.</li>
-              {!user ? <li>Play a game first, or log in to save history permanently.</li> : null}
+              {!user ? <li>Play a game first, or log in to save history across sessions.</li> : null}
             </ul>
           ) : (
             <div className="historyListScroll">
