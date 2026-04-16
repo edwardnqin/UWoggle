@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -47,6 +48,12 @@ public class GameSession {
     @Column(name = "guest_found_words", columnDefinition = "TEXT")
     private String guestFoundWords;
 
+    @Column(name = "host_submitted", nullable = false)
+    private Boolean hostSubmitted;
+
+    @Column(name = "guest_submitted", nullable = false)
+    private Boolean guestSubmitted;
+
     @Column(name = "winner_slot")
     private String winnerSlot;
 
@@ -69,61 +76,166 @@ public class GameSession {
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (completed == null) completed = false;
+        if (hostSubmitted == null) hostSubmitted = false;
+        if (guestSubmitted == null) guestSubmitted = false;
         if (mode == null) mode = "singleplayer";
         if (status == null) status = "WAITING";
         if (timerSeconds == null) timerSeconds = 180;
     }
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getMode() { return mode; }
-    public void setMode(String mode) { this.mode = mode; }
+    public String getMode() {
+        return mode;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
 
-    public Integer getTimerSeconds() { return timerSeconds; }
-    public void setTimerSeconds(Integer timerSeconds) { this.timerSeconds = timerSeconds; }
+    public String getStatus() {
+        return status;
+    }
 
-    public String getJoinCode() { return joinCode; }
-    public void setJoinCode(String joinCode) { this.joinCode = joinCode; }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public String getHostName() { return hostName; }
-    public void setHostName(String hostName) { this.hostName = hostName; }
+    public Integer getTimerSeconds() {
+        return timerSeconds;
+    }
 
-    public String getGuestName() { return guestName; }
-    public void setGuestName(String guestName) { this.guestName = guestName; }
+    public void setTimerSeconds(Integer timerSeconds) {
+        this.timerSeconds = timerSeconds;
+    }
 
-    public String getBoardLayout() { return boardLayout; }
-    public void setBoardLayout(String boardLayout) { this.boardLayout = boardLayout; }
+    public String getJoinCode() {
+        return joinCode;
+    }
 
-    public Integer getMaxScore() { return maxScore; }
-    public void setMaxScore(Integer maxScore) { this.maxScore = maxScore; }
+    public void setJoinCode(String joinCode) {
+        this.joinCode = joinCode;
+    }
 
-    public Integer getHostScore() { return hostScore; }
-    public void setHostScore(Integer hostScore) { this.hostScore = hostScore; }
+    public String getHostName() {
+        return hostName;
+    }
 
-    public Integer getGuestScore() { return guestScore; }
-    public void setGuestScore(Integer guestScore) { this.guestScore = guestScore; }
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-    public String getHostFoundWords() { return hostFoundWords; }
-    public void setHostFoundWords(String hostFoundWords) { this.hostFoundWords = hostFoundWords; }
+    public String getGuestName() {
+        return guestName;
+    }
 
-    public String getGuestFoundWords() { return guestFoundWords; }
-    public void setGuestFoundWords(String guestFoundWords) { this.guestFoundWords = guestFoundWords; }
+    public void setGuestName(String guestName) {
+        this.guestName = guestName;
+    }
 
-    public String getWinnerSlot() { return winnerSlot; }
-    public void setWinnerSlot(String winnerSlot) { this.winnerSlot = winnerSlot; }
+    public String getBoardLayout() {
+        return boardLayout;
+    }
 
-    public Boolean getCompleted() { return completed; }
-    public void setCompleted(Boolean completed) { this.completed = completed; }
+    public void setBoardLayout(String boardLayout) {
+        this.boardLayout = boardLayout;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Integer getMaxScore() {
+        return maxScore;
+    }
 
-    public LocalDateTime getStartedAt() { return startedAt; }
-    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
+    public void setMaxScore(Integer maxScore) {
+        this.maxScore = maxScore;
+    }
 
-    public LocalDateTime getCompletedAt() { return completedAt; }
-    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public Integer getHostScore() {
+        return hostScore;
+    }
+
+    public void setHostScore(Integer hostScore) {
+        this.hostScore = hostScore;
+    }
+
+    public Integer getGuestScore() {
+        return guestScore;
+    }
+
+    public void setGuestScore(Integer guestScore) {
+        this.guestScore = guestScore;
+    }
+
+    public String getHostFoundWords() {
+        return hostFoundWords;
+    }
+
+    public void setHostFoundWords(String hostFoundWords) {
+        this.hostFoundWords = hostFoundWords;
+    }
+
+    public String getGuestFoundWords() {
+        return guestFoundWords;
+    }
+
+    public void setGuestFoundWords(String guestFoundWords) {
+        this.guestFoundWords = guestFoundWords;
+    }
+
+    public Boolean getHostSubmitted() {
+        return hostSubmitted;
+    }
+
+    public void setHostSubmitted(Boolean hostSubmitted) {
+        this.hostSubmitted = hostSubmitted;
+    }
+
+    public Boolean getGuestSubmitted() {
+        return guestSubmitted;
+    }
+
+    public void setGuestSubmitted(Boolean guestSubmitted) {
+        this.guestSubmitted = guestSubmitted;
+    }
+
+    public String getWinnerSlot() {
+        return winnerSlot;
+    }
+
+    public void setWinnerSlot(String winnerSlot) {
+        this.winnerSlot = winnerSlot;
+    }
+
+    public Boolean getCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(Boolean completed) {
+        this.completed = completed;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
 }

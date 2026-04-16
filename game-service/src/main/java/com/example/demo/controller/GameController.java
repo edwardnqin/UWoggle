@@ -1,46 +1,54 @@
 package com.example.demo.controller;
 
-import com.example.demo.service.BoardGenerationService;
-import com.example.demo.service.BoggleSolver;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.demo.dto.CreateGameRequest;
+import com.example.demo.dto.LiveProgressRequest;
+import com.example.demo.dto.SubmitScoreRequest;
+import com.example.demo.service.GameSessionService;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/board")
-public class BoardController {
+@RequestMapping("/api/games")
+public class GameController {
 
-    private final BoardGenerationService boardService;
-    private final BoggleSolver solver;
+    private final GameSessionService gameSessionService;
 
-    public BoardController(BoardGenerationService boardService, BoggleSolver solver) {
-        this.boardService = boardService;
-        this.solver = solver;
+    public GameController(GameSessionService gameSessionService) {
+        this.gameSessionService = gameSessionService;
     }
 
-    @GetMapping
-    public Map<String, Object> getBoard() {
-        char[][] raw = boardService.generate();
-        List<List<String>> board = new ArrayList<>();
-        for (char[] row : raw) {
-            List<String> cells = new ArrayList<>();
-            for (char c : row) {
-                cells.add(c == 'Q' ? "QU" : String.valueOf(c));
-            }
-            board.add(cells);
-        }
+    @PostMapping
+    public Map<String, Object> createGame(@RequestBody CreateGameRequest request) {
+        return gameSessionService.createGame(request);
+    }
 
-        Map<String, Integer> words = solver.solve(raw);
-        int maxScore = BoggleSolver.maxScore(words);
+    @PostMapping("/join/{joinCode}")
+    public Map<String, Object> joinGame(
+            @PathVariable String joinCode,
+            @RequestParam(required = false) String guestName
+    ) {
+        return gameSessionService.joinGame(joinCode, guestName);
+    }
 
-        return Map.of(
-                "board", board,
-                "words", words,
-                "maxScore", maxScore
-        );
+    @GetMapping("/{id}")
+    public Map<String, Object> getGame(@PathVariable Long id) {
+        return gameSessionService.getGame(id);
+    }
+
+    @PostMapping("/{id}/progress")
+    public Map<String, Object> updateProgress(
+            @PathVariable Long id,
+            @RequestBody LiveProgressRequest request
+    ) {
+        return gameSessionService.updateLiveProgress(id, request);
+    }
+
+    @PostMapping("/{id}/score")
+    public Map<String, Object> submitScore(
+            @PathVariable Long id,
+            @RequestBody SubmitScoreRequest request
+    ) {
+        return gameSessionService.submitScore(id, request);
     }
 }
