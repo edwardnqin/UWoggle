@@ -19,6 +19,7 @@ import {
   getCurrentUser,
   saveGameHistory,
   fetchGameHistory,
+  deleteGameHistory,
 } from "./services/api";
 import MultiplayerLobby from "./pages/MultiplayerLobby";
 import MultiplayerGame from "./pages/MultiplayerGame";
@@ -78,6 +79,7 @@ export default function App() {
   const [savedHistory, setSavedHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const [deletingHistoryId, setDeletingHistoryId] = useState(null);
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
@@ -267,6 +269,27 @@ export default function App() {
     setView("end");
   }
 
+  async function handleDeleteHistoryRecord(recordId) {
+    if (!user || !recordId) return;
+
+    setHistoryError("");
+    setDeletingHistoryId(recordId);
+
+    try {
+      const response = await deleteGameHistory(recordId);
+      if (!response.ok) {
+        throw new Error(response?.data?.error || "Could not delete game history.");
+      }
+
+      const refreshed = await fetchGameHistory();
+      setSavedHistory(normalizeHistoryResponse(refreshed));
+    } catch (error) {
+      setHistoryError(error?.message || "Could not delete game history.");
+    } finally {
+      setDeletingHistoryId(null);
+    }
+  }
+
   function handleHistoryOpen() {
     if (!user) {
       openGuestPrompt("history");
@@ -440,6 +463,8 @@ export default function App() {
             user={user}
             loading={historyLoading}
             error={historyError}
+            onDeleteRecord={handleDeleteHistoryRecord}
+            deletingRecordId={deletingHistoryId}
           />
         ) : view === "online" ? (
           <MultiplayerLobby

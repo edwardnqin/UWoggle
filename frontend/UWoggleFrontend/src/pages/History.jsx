@@ -23,7 +23,7 @@ function formatResult(reason, timerDuration) {
   return "Game ended";
 }
 
-export default function History({ onBack, records, user, loading, error }) {
+export default function History({ onBack, records, user, loading, error, onDeleteRecord, deletingRecordId }) {
   return (
     <div className="screen">
       <div className="topBar">
@@ -61,7 +61,22 @@ export default function History({ onBack, records, user, loading, error }) {
               <div className="historyRecords">
                 {records.map((record) => (
                   <div key={record.id} className="historyRecordCard">
-                    <div><strong>Played:</strong> {record.playedAt}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                      <div><strong>Played:</strong> {record.playedAt}</div>
+                      {user ? (
+                        <HudButton
+                          variant="miniCancel"
+                          onClick={() => {
+                            const confirmed = window.confirm("Delete this history record?");
+                            if (confirmed && onDeleteRecord) {
+                              onDeleteRecord(record.id);
+                            }
+                          }}
+                        >
+                          {deletingRecordId === record.id ? "Deleting..." : "Delete"}
+                        </HudButton>
+                      ) : null}
+                    </div>
                     <div><strong>Result:</strong> {formatResult(record.reason, record.timerDuration)}</div>
                     <div><strong>Mode:</strong> {formatMode(record)}</div>
                     <div><strong>Duration:</strong> {record.timerDuration ? `${record.timerDuration} min` : "Unlimited"}</div>

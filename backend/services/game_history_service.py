@@ -113,3 +113,24 @@ def get_game_history_for_user(user):
         .all()
     )
     return [format_game_record(game) for game in games]
+
+
+
+def delete_game_history_record(user, game_id):
+    game = (
+        Game.query.filter_by(id=game_id, user_id=user.user_id, completed=True)
+        .first()
+    )
+
+    if not game:
+        return False
+
+    db.session.delete(game)
+    db.session.flush()
+
+    remaining_games = Game.query.filter_by(user_id=user.user_id, completed=True).all()
+    user.number_of_games_played = len(remaining_games)
+    user.high_score = max((int(g.final_score or 0) for g in remaining_games), default=0)
+
+    db.session.commit()
+    return True
