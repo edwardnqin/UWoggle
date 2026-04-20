@@ -9,6 +9,8 @@ import React, {
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
+const EMPTY_FOUND_WORDS = [];
+
 function Grid({
   onCommitWord,
   onBoardReady,
@@ -17,7 +19,7 @@ function Grid({
   initialWords = null,
   skipFetch = false,
   disabled = false,
-  alreadyFoundWords = [],
+  alreadyFoundWords = EMPTY_FOUND_WORDS,
 }) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
