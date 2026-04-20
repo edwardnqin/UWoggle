@@ -54,10 +54,11 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   const [submitted, setSubmitted] = useState(false);
   const [manualStatusMsg, setManualStatusMsg] = useState(null);
 
+  // ── Local countdown state (replaces useMemo) ──────────────────────────────
+  const [timeLeft, setTimeLeft] = useState(null);
+
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
-
-  const timeLeft = useMemo(() => computeTimeLeft(session), [session]);
 
   const loadSession = useCallback(async () => {
     if (!gameId) return;
@@ -125,6 +126,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     [gameId, playerRole]
   );
 
+  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -140,6 +142,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     };
   }, [loadSession]);
 
+  // ── Poll server every 2 seconds for game state updates ───────────────────
   useEffect(() => {
     if (!gameId || session?.completed) return;
 
@@ -150,6 +153,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     return () => window.clearInterval(id);
   }, [gameId, session?.completed, loadSession]);
 
+  // ── WebSocket for real-time updates ──────────────────────────────────────
   useEffect(() => {
     if (!gameId) return;
 
@@ -197,6 +201,28 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     };
   }, [gameId, playerRole]);
 
+  // ── Local countdown: sync from server, then tick down every 1 second ─────
+  useEffect(() => {
+    if (!session || session.status !== "ACTIVE" || session.completed) {
+      setTimeLeft(computeTimeLeft(session));
+      return;
+    }
+
+    // Sync to accurate server time whenever session updates
+    setTimeLeft(computeTimeLeft(session));
+
+    // Tick down locally every 1 second — smooth display independent of polling
+    const id = window.setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 0) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [session]);
+
+  // ── Auto-submit when time runs out ────────────────────────────────────────
   useEffect(() => {
     if (!session || session.completed) {
       if (session?.completed) {
