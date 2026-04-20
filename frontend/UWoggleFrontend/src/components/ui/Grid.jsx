@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo, useCallback } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
@@ -16,6 +16,25 @@ function Grid({
   const [status, setStatus] = useState("Loading board...");
 
   const submittedWordsRef = useRef(new Set());
+  const boardRef = useRef(null);
+  const cellRefs = useRef([]);
+
+  const [path, setPath] = useState([]);
+  const pathRef = useRef([]);
+  const [mode, setMode] = useState(null);
+  const modeRef = useRef(null);
+
+  const pointerDownRef = useRef(false);
+  const dragStartedRef = useRef(false);
+  const startCellRef = useRef(null);
+  const lastHoverRef = useRef(null);
+
+  const [pointerPos, setPointerPos] = useState(null);
+  const rafRef = useRef(null);
+  const [trailPoints, setTrailPoints] = useState([]);
+
+  const rows = grid?.length ?? 0;
+  const cols = grid?.[0]?.length ?? 0;
 
   useEffect(() => {
     submittedWordsRef.current = new Set(
@@ -26,29 +45,29 @@ function Grid({
   useEffect(() => {
     let cancelled = false;
 
-    if (skipFetch && initialBoard) {
-      const normalizedWords = Object.fromEntries(
-        Object.entries(initialWords ?? {}).map(([word, points]) => [
-          word.toUpperCase(),
-          Number(points),
-        ])
-      );
+    async function loadGrid() {
+      if (skipFetch && initialBoard) {
+        const normalizedWords = Object.fromEntries(
+          Object.entries(initialWords ?? {}).map(([word, points]) => [
+            word.toUpperCase(),
+            Number(points),
+          ])
+        );
 
-      setGrid(initialBoard);
-      setBoardWords(normalizedWords);
+        if (cancelled) return;
+        setGrid(initialBoard);
+        setBoardWords(normalizedWords);
 
-      onBoardReady?.({
-        board: initialBoard,
-        totalWords: Object.keys(normalizedWords).length,
-      });
+        onBoardReady?.({
+          board: initialBoard,
+          totalWords: Object.keys(normalizedWords).length,
+        });
 
-      setStatus("Board ready.");
-      return () => {
-        cancelled = true;
-      };
-    }
+        setStatus("Board ready.");
+        return;
+      }
 
-    getBoard().then((res) => {
+      const res = await getBoard();
       if (cancelled) return;
 
       if (!res.ok || !res.data?.board) {
@@ -72,49 +91,39 @@ function Grid({
       });
 
       setStatus("Board ready.");
-    });
+    }
+
+    void loadGrid();
 
     return () => {
       cancelled = true;
     };
   }, [onBoardReady, initialBoard, initialWords, skipFetch]);
 
-  const boardRef = useRef(null);
-  const cellRefs = useRef([]);
+  useEffect(() => {
+    if (!rows || !cols) return;
+    cellRefs.current = Array.from({ length: rows }, () => Array(cols).fill(null));
+  }, [rows, cols]);
 
-  const [path, setPath] = useState([]);
-  const pathRef = useRef([]);
-  const setPathBoth = (next) => {
+  const setPathBoth = useCallback((next) => {
     pathRef.current = next;
     setPath(next);
-  };
+  }, []);
 
-  const [mode, setMode] = useState(null);
-  const modeRef = useRef(null);
-  const setModeBoth = (nextMode) => {
+  const setModeBoth = useCallback((nextMode) => {
     modeRef.current = nextMode;
     setMode(nextMode);
-  };
+  }, []);
 
-  const pointerDownRef = useRef(false);
-  const dragStartedRef = useRef(false);
-  const startCellRef = useRef(null);
-  const lastHoverRef = useRef(null);
+  const makeCell = useCallback((r, c) => ({ r, c, letter: grid[r][c] }), [grid]);
 
-  const [pointerPos, setPointerPos] = useState(null);
-  const rafRef = useRef(null);
-
-  const [trailPoints, setTrailPoints] = useState([]);
-
-  const makeCell = (r, c) => ({ r, c, letter: grid[r][c] });
-
-  const isAdjacent = (a, b) => {
+  const isAdjacent = useCallback((a, b) => {
     const dr = Math.abs(a.r - b.r);
     const dc = Math.abs(a.c - b.c);
     return dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
-  };
+  }, []);
 
-  const applyStep = (r, c) => {
+  const applyStep = useCallback((r, c) => {
     const current = pathRef.current;
     const nextCell = makeCell(r, c);
 
@@ -140,9 +149,9 @@ function Grid({
     }
 
     setPathBoth([...current, nextCell]);
-  };
+  }, [isAdjacent, makeCell, setPathBoth]);
 
-  const commit = () => {
+  const commit = useCallback(() => {
     const currentPath = pathRef.current;
     if (currentPath.length === 0) return;
 
@@ -180,9 +189,9 @@ function Grid({
     submittedWordsRef.current.add(word);
     setStatus(`Accepted: "${word}" (+${points})`);
     onCommitWord?.(word, points);
-  };
+  }, [boardWords, disabled, onCommitWord, setModeBoth, setPathBoth]);
 
-  const onCellPointerDown = (r, c) => (e) => {
+  const onCellPointerDown = useCallback((r, c) => (e) => {
     if (disabled) {
       setStatus("Waiting for game to start.");
       return;
@@ -198,7 +207,7 @@ function Grid({
     if (rect) {
       setPointerPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     }
-  };
+  }, [disabled]);
 
   useEffect(() => {
     if (!grid) return undefined;
@@ -272,7 +281,7 @@ function Grid({
       window.removeEventListener("pointerup", handleUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [grid, boardWords, disabled]);
+  }, [grid, applyStep, commit, makeCell, setModeBoth, setPathBoth]);
 
   useEffect(() => {
     const handleDocPointerDown = (e) => {
@@ -289,7 +298,7 @@ function Grid({
     return () => {
       document.removeEventListener("pointerdown", handleDocPointerDown, true);
     };
-  }, [boardWords, disabled]);
+  }, [commit]);
 
   useLayoutEffect(() => {
     const boardElement = boardRef.current;
@@ -313,26 +322,8 @@ function Grid({
     setTrailPoints(points);
   }, [path]);
 
-  if (!grid) {
-    return (
-      <div className="grid-background">
-        <div className="wordPreview">{status}</div>
-      </div>
-    );
-  }
-
-  const rows = grid.length;
-  const cols = grid[0]?.length ?? 0;
-  if (
-    !cellRefs.current.length ||
-    cellRefs.current.length !== rows ||
-    cellRefs.current[0]?.length !== cols
-  ) {
-    cellRefs.current = grid.map((row) => row.map(() => null));
-  }
-
-  const word = path.map((p) => p.letter).join("");
-  const isInPath = (r, c) => path.some((p) => p.r === r && p.c === c);
+  const word = useMemo(() => path.map((p) => p.letter).join(""), [path]);
+  const isInPath = useCallback((r, c) => path.some((p) => p.r === r && p.c === c), [path]);
 
   const effectivePoints =
     mode === "drag" && pointerPos && trailPoints.length > 0
@@ -340,6 +331,14 @@ function Grid({
       : trailPoints;
 
   const pointsAttr = effectivePoints.map((p) => `${p.x},${p.y}`).join(" ");
+
+  if (!grid) {
+    return (
+      <div className="grid-background">
+        <div className="wordPreview">{status}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid-background">
@@ -368,7 +367,9 @@ function Grid({
                       data-r={r}
                       data-c={c}
                       ref={(el) => {
-                        cellRefs.current[r][c] = el;
+                        if (cellRefs.current[r]) {
+                          cellRefs.current[r][c] = el;
+                        }
                       }}
                       onPointerDown={onCellPointerDown(r, c)}
                       role="button"

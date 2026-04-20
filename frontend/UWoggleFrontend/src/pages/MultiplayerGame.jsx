@@ -51,12 +51,13 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   const [session, setSession] = useState(null);
   const [foundWords, setFoundWords] = useState([]);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [manualStatusMsg, setManualStatusMsg] = useState(null);
 
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
+
+  const timeLeft = useMemo(() => computeTimeLeft(session), [session]);
 
   const loadSession = useCallback(async () => {
     if (!gameId) return;
@@ -72,7 +73,6 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
       setScore(getScoreForRole(data, playerRole));
       setFoundWords(getWordsForRole(data, playerRole));
       setSubmitted(getSubmittedForRole(data, playerRole));
-      setTimeLeft(computeTimeLeft(data));
     } catch {
       setManualStatusMsg("Could not reach the game service.");
     }
@@ -98,7 +98,6 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
       setSubmitted(true);
       setManualStatusMsg("Score submitted. Waiting for other player...");
       setSession(data);
-      setTimeLeft(computeTimeLeft(data));
     } catch {
       setManualStatusMsg("Could not submit score.");
     }
@@ -127,7 +126,18 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   );
 
   useEffect(() => {
-    void loadSession();
+    let cancelled = false;
+
+    async function initialLoad() {
+      if (cancelled) return;
+      await loadSession();
+    }
+
+    void initialLoad();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadSession]);
 
   useEffect(() => {
@@ -159,7 +169,6 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
 
         const nextSession = message.payload;
         setSession(nextSession);
-        setTimeLeft(computeTimeLeft(nextSession));
         setSubmitted(getSubmittedForRole(nextSession, playerRole));
 
         const serverWords = getWordsForRole(nextSession, playerRole);
@@ -189,18 +198,15 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   }, [gameId, playerRole]);
 
   useEffect(() => {
-    if (!session) return;
-
-    setTimeLeft(computeTimeLeft(session));
-
-    if (session.completed) {
-      autoSubmittedRef.current = true;
+    if (!session || session.completed) {
+      if (session?.completed) {
+        autoSubmittedRef.current = true;
+      }
       return;
     }
 
     const timerId = window.setInterval(() => {
       const next = computeTimeLeft(session);
-      setTimeLeft(next);
 
       if (next === 0 && !autoSubmittedRef.current && !submitted) {
         autoSubmittedRef.current = true;
