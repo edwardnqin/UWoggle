@@ -1,4 +1,4 @@
-/**
+ /**
  * api.js — Centralized API service for UWoggle.
  */
 
@@ -75,6 +75,49 @@ export async function saveGameHistory(payload) {
 export async function fetchGameHistory() {
   return request("/games/history");
 }
+
+export async function deleteGameHistory(recordId) {
+  return request(`/games/history/${recordId}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Friends — profile sidebar: list friends, pending requests, invite by username
+// ---------------------------------------------------------------------------
+
+export async function fetchFriends(userId) {
+  return request(`/friends/${userId}`, { method: "GET" });
+}
+
+export async function fetchFriendRequests(userId) {
+  return request(`/friends/${userId}/requests`, { method: "GET" });
+}
+
+export async function sendFriendRequest(requesterId, username) {
+  return request("/friends/request", {
+    method: "POST",
+    body: JSON.stringify({ requester_id: requesterId, username }),
+  });
+}
+
+export async function respondToFriendRequest(requestId, action) {
+  return request(`/friends/${requestId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+}
+
+export async function removeFriend(friendId) {
+  return request("/friends/remove", {
+    method: "DELETE",
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Game
+// ---------------------------------------------------------------------------
 
 export async function getBoard() {
   return request("/board");

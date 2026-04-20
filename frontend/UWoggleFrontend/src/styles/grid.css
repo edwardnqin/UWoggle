@@ -1,19 +1,19 @@
 /* The following three styles are for the Grid */
-  td {
-    border-style: solid;
-    width: 100px;
-    height: 100px;
-    background-color: #E84D53;
-    border-radius: 10%;
-  }
+td {
+  border-style: solid;
+  width: 100px;
+  height: 100px;
+  background-color: #e84d53;
+  border-radius: 10%;
+}
 
 .circle {
-  width: 80%; /* Set equal width and height for the inner circle */
+  width: 80%;
   height: 80%;
   margin: 0 auto;
-  background: #C51C24;
+  background: #c51c24;
   font-size: 65px;
-  border-radius: 50%; /* This makes the square element a circle */
+  border-radius: 50%;
   color: white;
   touch-action: none;
   cursor: pointer;
@@ -21,19 +21,27 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    outline-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .grid-background {
-  background: #7E0D0D;
+  background: #7e0d0d;
 }
 
-.circle:hover{
-    background: #FFC1C4;
-    color: black;
+.circle:hover {
+  background: #ffc1c4;
+  color: black;
 }
 
 /* prevent annoying text selection while dragging */
-.gridTable, td, .circle {
+.gridTable,
+td,
+.circle {
   user-select: none;
 }
 
@@ -44,30 +52,141 @@
 }
 
 .circle.selected {
-  /* simple highlight */
   outline: 4px solid white;
   outline-offset: 2px;
 }
 
+.circle.selected--prefix {
+  outline-color: #aaf3b7;
+  box-shadow: 0 0 0 8px rgba(170, 243, 183, 0.18);
+}
+
+.circle.selected--valid {
+  outline-color: #64ff8e;
+  box-shadow: 0 0 0 10px rgba(100, 255, 142, 0.22);
+  transform: scale(1.03);
+}
+
+.circle.selected--invalid {
+  outline-color: #ff8a8a;
+  box-shadow: 0 0 0 8px rgba(255, 138, 138, 0.18);
+  animation: invalidPulse 220ms ease 2;
+}
+
+.circle.selected--duplicate {
+  outline-color: #ffd369;
+  box-shadow: 0 0 0 8px rgba(255, 211, 105, 0.2);
+}
+
 .boardWrap {
-    position: relative;
-    display: inline-block;
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+.gridTable {
+  position: relative;
+  z-index: 2;
+}
+
+.trailSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 4;
+}
+
+.trailLine {
+  fill: none;
+  stroke: white;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+  transition:
+    stroke 140ms ease,
+    opacity 140ms ease,
+    filter 140ms ease;
+}
+
+.trailLine--prefix {
+  stroke: #9cf0aa;
+  filter: drop-shadow(0 0 6px rgba(156, 240, 170, 0.35));
+}
+
+.trailLine--valid {
+  stroke: #63ff90;
+  filter: drop-shadow(0 0 8px rgba(99, 255, 144, 0.45));
+}
+
+.trailLine--invalid {
+  stroke: #ff7d7d;
+  filter: drop-shadow(0 0 6px rgba(255, 125, 125, 0.35));
+}
+
+.trailLine--duplicate {
+  stroke: #ffd369;
+  filter: drop-shadow(0 0 6px rgba(255, 211, 105, 0.35));
+}
+
+.floatingWord {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(25, 16, 16, 0.92);
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+}
+
+.floatingWord--prefix {
+  background: rgba(55, 106, 63, 0.96);
+  border-color: #aaf3b7;
+}
+
+.floatingWord--valid {
+  background: rgba(39, 120, 58, 0.96);
+  border-color: #64ff8e;
+  animation: labelPop 180ms ease;
+}
+
+.floatingWord--invalid {
+  background: rgba(145, 46, 46, 0.96);
+  border-color: #ff8a8a;
+}
+
+.floatingWord--duplicate {
+  background: rgba(143, 98, 24, 0.96);
+  border-color: #ffd369;
+}
+
+@keyframes invalidPulse {
+  0% {
+    transform: scale(1);
   }
-  
-  .trailSvg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* don’t block clicking */
-    overflow: visible;
+  50% {
+    transform: scale(1.06);
   }
-  
-  .trailLine {
-    fill: none;
-    stroke: white;
-    stroke-width: 8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    opacity: 0.85;
+  100% {
+    transform: scale(1);
   }
+}
+
+@keyframes labelPop {
+  0% {
+    transform: translate(-50%, calc(-100% - 10px)) scale(0.94);
+  }
+  100% {
+    transform: translate(-50%, calc(-100% - 14px)) scale(1);
+  }
+}

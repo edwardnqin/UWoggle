@@ -3,13 +3,15 @@ friends_routes.py
 
 Flask routes for Friend System endpoints.
 
+POST /request body uses ``requester_id`` + ``username`` (not tokens). The authenticated user's id
+should match ``requester_id`` in a hardened deployment; today the client sends it explicitly.
+
 Endpoints:
 - GET    /api/friends/<user_id>              -> list accepted friends (includes is_online)
 - GET    /api/friends/<user_id>/requests     -> list pending (incoming/outgoing)
-- POST   /api/friends/generate-token         -> generate a 15-min reusable friend token
-- POST   /api/friends/request                -> send friend request via token
+- POST   /api/friends/request                -> send friend request by username
 - POST   /api/friends/<request_id>/respond   -> accept/decline request
-- DELETE /api/friends/remove                 -> remove accepted friend
+- DELETE /api/friends/remove                 -> remove accepted friend (JWT cookie; body: friend_id only)
 
 This file should be registered in app.py via:
     app.register_blueprint(friends_bp)
@@ -19,11 +21,11 @@ from __future__ import annotations
 
 from flask import Blueprint, request, jsonify
 from database import get_db_connection
+from services.auth_service import get_current_user_from_request
 from services.friend_service import (
     list_friends,
     list_requests,
-    generate_friend_token,
-    send_request_by_token,
+    send_request_by_username,
     respond_request,
     remove_friend,
 )
@@ -63,57 +65,31 @@ def get_requests(user_id: int):
         conn.close()
 
 
-@friends_bp.post("/generate-token")
-def post_generate_token():
-    """
-    Generate a reusable 6-character friend token valid for 15 minutes.
-
-    Expected JSON body:
-        { "user_id": <int> }
-
-    Returns:
-        200: { "token": "X7K2P9", "expires_at": "..." }
-        400: missing user_id
-    """
-    payload = request.get_json(silent=True) or {}
-    user_id = payload.get("user_id")
-
-    if user_id is None:
-        return jsonify({"error": "user_id is required"}), 400
-
-    conn = get_db_connection()
-    try:
-        result = generate_friend_token(conn, int(user_id))
-        return jsonify(result), 200
-    finally:
-        conn.close()
-
-
 @friends_bp.post("/request")
 def post_request():
     """
-    Send a friend request using a friend token.
+    Send a friend request to a user by username.
 
     Expected JSON body:
         {
           "requester_id": <int>,
-          "token": <str>
+          "username": <str>
         }
 
     Returns:
         201: request created successfully
-        400: invalid/expired token, already friends, self-add, etc.
+        400: unknown user, self-add, duplicate, etc.
     """
     payload = request.get_json(silent=True) or {}
     requester_id = payload.get("requester_id")
-    token = payload.get("token")
+    username = payload.get("username")
 
-    if requester_id is None or not token:
-        return jsonify({"error": "requester_id and token are required"}), 400
+    if requester_id is None or username is None or (isinstance(username, str) and not username.strip()):
+        return jsonify({"error": "requester_id and username are required"}), 400
 
     conn = get_db_connection()
     try:
-        ok, msg = send_request_by_token(conn, int(requester_id), token)
+        ok, msg = send_request_by_username(conn, int(requester_id), str(username))
         if not ok:
             return jsonify({"error": msg}), 400
         return jsonify({"message": msg}), 201
@@ -149,29 +125,39 @@ def post_respond(request_id: int):
 @friends_bp.delete("/remove")
 def delete_friend():
     """
-    Remove an accepted friend relationship.
+    Remove an accepted friend relationship for the logged-in user.
+
+    Deletes the single ``friends`` row for the pair, so both users stop seeing each other
+    on the next list fetch.
 
     Expected JSON body:
-        {
-          "user_id": <int>,
-          "friend_id": <int>
-        }
+        { "friend_id": <int> }
 
     Returns:
         200: removed successfully
-        404: relationship not found
-        400: missing fields
+        401: not logged in
+        404: no accepted friendship with that user
+        400: missing/invalid friend_id or friend_id equals self
     """
-    payload = request.get_json(silent=True) or {}
-    user_id = payload.get("user_id")
-    friend_id = payload.get("friend_id")
+    user = get_current_user_from_request()
+    if not user:
+        return jsonify({"error": "Not authenticated"}), 401
 
-    if user_id is None or friend_id is None:
-        return jsonify({"error": "user_id and friend_id are required"}), 400
+    payload = request.get_json(silent=True) or {}
+    friend_id = payload.get("friend_id")
+    if friend_id is None:
+        return jsonify({"error": "friend_id is required"}), 400
+    try:
+        friend_id = int(friend_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "friend_id must be an integer"}), 400
+
+    if friend_id == user.user_id:
+        return jsonify({"error": "You cannot remove yourself as a friend"}), 400
 
     conn = get_db_connection()
     try:
-        ok, msg = remove_friend(conn, int(user_id), int(friend_id))
+        ok, msg = remove_friend(conn, user.user_id, friend_id)
         if not ok:
             return jsonify({"error": msg}), 404
         return jsonify({"message": msg}), 200
