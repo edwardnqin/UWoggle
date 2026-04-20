@@ -54,8 +54,9 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   const [submitted, setSubmitted] = useState(false);
   const [manualStatusMsg, setManualStatusMsg] = useState(null);
 
-  // ── Local countdown state (replaces useMemo) ──────────────────────────────
-  const [timeLeft, setTimeLeft] = useState(null);
+  // ── Local countdown: derive from session on every render ──────────────────
+  const [, setTick] = useState(0);
+  const timeLeft = computeTimeLeft(session);
 
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
@@ -201,22 +202,12 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     };
   }, [gameId, playerRole]);
 
-  // ── Local countdown: sync from server, then tick down every 1 second ─────
+  // ── Local countdown: re-render every 1 second while active ───────────────
   useEffect(() => {
-    if (!session || session.status !== "ACTIVE" || session.completed) {
-      setTimeLeft(computeTimeLeft(session));
-      return;
-    }
+    if (!session || session.status !== "ACTIVE" || session.completed) return;
 
-    // Sync to accurate server time whenever session updates
-    setTimeLeft(computeTimeLeft(session));
-
-    // Tick down locally every 1 second — smooth display independent of polling
     const id = window.setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 0) return 0;
-        return prev - 1;
-      });
+      setTick((t) => t + 1);
     }, 1000);
 
     return () => window.clearInterval(id);
