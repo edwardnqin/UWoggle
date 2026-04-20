@@ -98,8 +98,12 @@ function Grid({
   const effectiveGrid = skipFetch && initialBoard ? initialBoard : grid;
   const effectiveBoardWords =
     skipFetch && initialBoard ? normalizedInitialWords : boardWords;
-  const effectiveStatus =
-    skipFetch && initialBoard ? "Board ready." : status;
+
+  const effectiveStatus = useMemo(() => {
+    if (skipFetch && initialBoard) return "Board ready.";
+    if (effectiveGrid && status === "Loading board...") return "Board ready.";
+    return status;
+  }, [skipFetch, initialBoard, effectiveGrid, status]);
 
   const getPathWord = useCallback(
     (cells) => cells.map((cell) => cell.letter).join("").toUpperCase().trim(),
@@ -137,15 +141,8 @@ function Grid({
   const getSelectionState = useCallback(
     (word) => {
       if (!word) return "idle";
-
-      if (effectiveBoardWords[word]) {
-        return "valid";
-      }
-
-      if (prefixSet.has(word)) {
-        return "prefix";
-      }
-
+      if (effectiveBoardWords[word]) return "valid";
+      if (prefixSet.has(word)) return "prefix";
       return "invalid";
     },
     [effectiveBoardWords, prefixSet]
@@ -328,10 +325,11 @@ function Grid({
       });
 
       onSetMaxScoreRef.current?.(
-        Object.values(normalizedInitialWords).reduce((sum, points) => sum + Number(points), 0)
+        Object.values(normalizedInitialWords).reduce(
+          (sum, points) => sum + Number(points),
+          0
+        )
       );
-
-      setStatus("Board ready.");
 
       return () => {
         cancelled = true;
@@ -362,7 +360,6 @@ function Grid({
       });
 
       onSetMaxScoreRef.current?.(res.data.maxScore);
-      setStatus("Board ready.");
     });
 
     return () => {
