@@ -1,4 +1,4 @@
- /**
+/**
  * api.js — Centralized API service for UWoggle.
  */
 
@@ -82,10 +82,6 @@ export async function deleteGameHistory(recordId) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Friends — profile sidebar: list friends, pending requests, invite by username
-// ---------------------------------------------------------------------------
-
 export async function fetchFriends(userId) {
   return request(`/friends/${userId}`, { method: "GET" });
 }
@@ -120,7 +116,9 @@ export async function removeFriend(friendId) {
 // ---------------------------------------------------------------------------
 
 export async function getBoard() {
-  return request("/board");
+  return gameServiceRequest("/board", {
+    method: "GET",
+  });
 }
 
 export async function createMultiplayerGame(timerSeconds, hostName) {
