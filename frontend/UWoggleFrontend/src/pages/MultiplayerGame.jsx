@@ -292,6 +292,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
 
         <div className="playMain">
           <div className="playBoard">
+            {session.status === "ACTIVE" &&
             <Grid
               onCommitWord={handleCommitWord}
               initialBoard={session.board}
@@ -299,7 +300,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
               skipFetch={true}
               disabled={session.status !== "ACTIVE" || submitted || session.completed}
               alreadyFoundWords={foundWords}
-            />
+            />}
           </div>
 
           <div className="playSidebar">
