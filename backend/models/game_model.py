@@ -21,6 +21,8 @@ class Game(db.Model):
     guest_score = db.Column(db.Integer, nullable=True)
     host_found_words = db.Column(db.Text, nullable=True)
     guest_found_words = db.Column(db.Text, nullable=True)
+    host_submitted = db.Column(db.Boolean, nullable=False, default=False)
+    guest_submitted = db.Column(db.Boolean, nullable=False, default=False)
     winner_user_id = db.Column(db.Integer, nullable=True)
     completed = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
