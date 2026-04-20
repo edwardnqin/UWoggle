@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS friend_tokens (
     );
 
 CREATE TABLE IF NOT EXISTS games (
-                                     id                INT AUTO_INCREMENT PRIMARY KEY,
-                                     mode              VARCHAR(30) NOT NULL DEFAULT 'singleplayer',
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    mode              VARCHAR(30) NOT NULL DEFAULT 'singleplayer',
     status            VARCHAR(30) NOT NULL DEFAULT 'WAITING',
     timer_seconds     INT NOT NULL DEFAULT 180,
     join_code         VARCHAR(20) NULL UNIQUE,
@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS games (
     guest_score       INT NULL,
     host_found_words  TEXT NULL,
     guest_found_words TEXT NULL,
+    host_submitted    BOOLEAN NOT NULL DEFAULT FALSE,
+    guest_submitted   BOOLEAN NOT NULL DEFAULT FALSE,
     winner_slot       VARCHAR(10) NULL,
 
     completed         BOOLEAN NOT NULL DEFAULT FALSE,

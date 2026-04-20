@@ -1,11 +1,23 @@
-/**
+ /**
  * api.js — Centralized API service for UWoggle.
  */
 
 const BASE = "/api";
+const GAME_SERVICE_BASE = "http://localhost:8080/api";
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...options.headers },
+    credentials: "include",
+    ...options,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function gameServiceRequest(path, options = {}) {
+  const res = await fetch(`${GAME_SERVICE_BASE}${path}`, {
     headers: { "Content-Type": "application/json", ...options.headers },
     credentials: "include",
     ...options,
@@ -43,10 +55,6 @@ export async function resendVerification(email) {
   });
 }
 
-/**
- * GET /api/me
- * Returns the currently logged-in user from the auth cookie.
- */
 export async function getMe() {
   return request("/me", {
     method: "GET",
@@ -86,7 +94,6 @@ export async function fetchFriendRequests(userId) {
   return request(`/friends/${userId}/requests`, { method: "GET" });
 }
 
-/** POST /api/friends/request — username is the other user's UWoggle login name. */
 export async function sendFriendRequest(requesterId, username) {
   return request("/friends/request", {
     method: "POST",
@@ -101,7 +108,6 @@ export async function respondToFriendRequest(requestId, action) {
   });
 }
 
-/** DELETE /api/friends/remove — logged-in user removes an accepted friend (cookie auth). */
 export async function removeFriend(friendId) {
   return request("/friends/remove", {
     method: "DELETE",
@@ -118,56 +124,57 @@ export async function getBoard() {
 }
 
 export async function createMultiplayerGame(timerSeconds, hostName) {
-  return fetch("http://localhost:8080/api/games", {
+  return gameServiceRequest("/games", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       mode: "multiplayer",
       timerSeconds,
       hostName,
     }),
-  }).then(async (res) => ({
-    ok: res.ok,
-    status: res.status,
-    data: await res.json().catch(() => ({})),
-  }));
+  });
 }
 
 export async function joinMultiplayerGame(joinCode, guestName) {
   const query = guestName ? `?guestName=${encodeURIComponent(guestName)}` : "";
-  return fetch(`http://localhost:8080/api/games/join/${encodeURIComponent(joinCode)}${query}`, {
+  return gameServiceRequest(`/games/join/${encodeURIComponent(joinCode)}${query}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-  }).then(async (res) => ({
-    ok: res.ok,
-    status: res.status,
-    data: await res.json().catch(() => ({})),
-  }));
+  });
 }
 
 export async function getGameSession(gameId) {
-  return fetch(`http://localhost:8080/api/games/${gameId}`, {
+  return gameServiceRequest(`/games/${gameId}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
-  }).then(async (res) => ({
-    ok: res.ok,
-    status: res.status,
-    data: await res.json().catch(() => ({})),
-  }));
+  });
+}
+
+export async function updateMultiplayerProgress(gameId, playerRole, currentScore, foundWords) {
+  return gameServiceRequest(`/games/${gameId}/progress`, {
+    method: "POST",
+    body: JSON.stringify({
+      playerRole,
+      currentScore,
+      foundWords,
+    }),
+  });
 }
 
 export async function submitMultiplayerScore(gameId, playerRole, finalScore, foundWords) {
-  return fetch(`http://localhost:8080/api/games/${gameId}/score`, {
+  return gameServiceRequest(`/games/${gameId}/score`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       playerRole,
       finalScore,
       foundWords,
     }),
-  }).then(async (res) => ({
-    ok: res.ok,
-    status: res.status,
-    data: await res.json().catch(() => ({})),
-  }));
+  });
+}
+
+export function getGameWebSocketUrl(gameId) {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host =
+    window.location.hostname === "localhost"
+      ? "localhost:8080"
+      : window.location.host;
+
+  return `${protocol}//${host}/ws/games?gameId=${encodeURIComponent(gameId)}`;
 }
