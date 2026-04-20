@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.CreateGameRequest;
-import com.example.demo.dto.LiveProgressRequest;
+import com.example.demo.dto.ProgressUpdateRequest;
 import com.example.demo.dto.SubmitScoreRequest;
 import com.example.demo.service.GameSessionService;
 import org.springframework.web.bind.annotation.*;
@@ -39,9 +39,9 @@ public class GameController {
     @PostMapping("/{id}/progress")
     public Map<String, Object> updateProgress(
             @PathVariable Long id,
-            @RequestBody LiveProgressRequest request
+            @RequestBody ProgressUpdateRequest request
     ) {
-        return gameSessionService.updateLiveProgress(id, request);
+        return gameSessionService.updateProgress(id, request);
     }
 
     @PostMapping("/{id}/score")

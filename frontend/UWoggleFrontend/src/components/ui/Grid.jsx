@@ -2,28 +2,40 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "../../styles/grid.css";
 import { getBoard } from "../../services/api";
 
-function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = null, skipFetch = false }) {
+function Grid({
+  onCommitWord,
+  onBoardReady,
+  initialBoard = null,
+  initialWords = null,
+  skipFetch = false,
+  disabled = false,
+  alreadyFoundWords = [],
+}) {
   const [grid, setGrid] = useState(null);
   const [boardWords, setBoardWords] = useState({});
   const [status, setStatus] = useState("Loading board...");
 
-  // Track accepted words locally so duplicates are blocked immediately
   const submittedWordsRef = useRef(new Set());
+
+  useEffect(() => {
+    submittedWordsRef.current = new Set(
+      (alreadyFoundWords ?? []).map((word) => String(word).toUpperCase())
+    );
+  }, [alreadyFoundWords]);
 
   useEffect(() => {
     let cancelled = false;
 
     if (skipFetch && initialBoard) {
       const normalizedWords = Object.fromEntries(
-          Object.entries(initialWords ?? {}).map(([word, points]) => [
-            word.toUpperCase(),
-            Number(points),
-          ])
+        Object.entries(initialWords ?? {}).map(([word, points]) => [
+          word.toUpperCase(),
+          Number(points),
+        ])
       );
 
       setGrid(initialBoard);
       setBoardWords(normalizedWords);
-      submittedWordsRef.current = new Set();
 
       onBoardReady?.({
         board: initialBoard,
@@ -45,15 +57,14 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
       }
 
       const normalizedWords = Object.fromEntries(
-          Object.entries(res.data.words ?? {}).map(([word, points]) => [
-            word.toUpperCase(),
-            Number(points),
-          ])
+        Object.entries(res.data.words ?? {}).map(([word, points]) => [
+          word.toUpperCase(),
+          Number(points),
+        ])
       );
 
       setGrid(res.data.board);
       setBoardWords(normalizedWords);
-      submittedWordsRef.current = new Set();
 
       onBoardReady?.({
         board: res.data.board,
@@ -68,13 +79,9 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     };
   }, [onBoardReady, initialBoard, initialWords, skipFetch]);
 
-  // Wrap container (for outside-click detection + trail coordinate space)
   const boardRef = useRef(null);
-
-  // Store element refs for measuring centers (sized when grid is set)
   const cellRefs = useRef([]);
 
-  // Canonical path stored in a ref (avoids async setState ordering issues)
   const [path, setPath] = useState([]);
   const pathRef = useRef([]);
   const setPathBoth = (next) => {
@@ -82,7 +89,6 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     setPath(next);
   };
 
-  // mode: null | "click" | "drag"
   const [mode, setMode] = useState(null);
   const modeRef = useRef(null);
   const setModeBoth = (nextMode) => {
@@ -90,18 +96,15 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     setMode(nextMode);
   };
 
-  // pointer tracking
   const pointerDownRef = useRef(false);
   const dragStartedRef = useRef(false);
-  const startCellRef = useRef(null); // {r,c}
-  const lastHoverRef = useRef(null); // {r,c}
+  const startCellRef = useRef(null);
+  const lastHoverRef = useRef(null);
 
-  // pointer position for “live” trail during drag
-  const [pointerPos, setPointerPos] = useState(null); // {x,y} relative to boardWrap
+  const [pointerPos, setPointerPos] = useState(null);
   const rafRef = useRef(null);
 
-  // computed points for the trail (centers of chosen cells)
-  const [trailPoints, setTrailPoints] = useState([]); // [{x,y}, ...]
+  const [trailPoints, setTrailPoints] = useState([]);
 
   const makeCell = (r, c) => ({ r, c, letter: grid[r][c] });
 
@@ -111,7 +114,6 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     return dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
   };
 
-  // Add / backtrack step (works for both click + drag)
   const applyStep = (r, c) => {
     const current = pathRef.current;
     const nextCell = makeCell(r, c);
@@ -124,10 +126,8 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     const last = current[current.length - 1];
     if (!isAdjacent(last, nextCell)) return;
 
-    // If revisiting a cell: backtrack
     const idx = current.findIndex((p) => p.r === r && p.c === c);
     if (idx !== -1) {
-      // if it's the immediate previous cell => pop one
       if (current.length >= 2) {
         const prev = current[current.length - 2];
         if (prev.r === r && prev.c === c) {
@@ -135,12 +135,10 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
           return;
         }
       }
-      // otherwise truncate to that earlier point
       setPathBoth(current.slice(0, idx + 1));
       return;
     }
 
-    // Normal add
     setPathBoth([...current, nextCell]);
   };
 
@@ -157,6 +155,11 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     setPathBoth([]);
     setModeBoth(null);
     setPointerPos(null);
+
+    if (disabled) {
+      setStatus("Waiting for game to start.");
+      return;
+    }
 
     if (word.length < 3) {
       setStatus(`"${word}" is too short.`);
@@ -179,8 +182,12 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     onCommitWord?.(word, points);
   };
 
-  // Start tracking pointer down on a cell (do NOT auto-commit)
   const onCellPointerDown = (r, c) => (e) => {
+    if (disabled) {
+      setStatus("Waiting for game to start.");
+      return;
+    }
+
     e.preventDefault();
     pointerDownRef.current = true;
     dragStartedRef.current = false;
@@ -193,7 +200,6 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     }
   };
 
-  // Global move/up listeners so dragging across cells is reliable
   useEffect(() => {
     if (!grid) return undefined;
 
@@ -226,7 +232,6 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
       const start = startCellRef.current;
       if (!start) return;
 
-      // If we ever move to a different cell while pointer is down => drag mode
       if (!dragStartedRef.current && (r !== start.r || c !== start.c)) {
         dragStartedRef.current = true;
         setModeBoth("drag");
@@ -243,13 +248,11 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
 
       const start = startCellRef.current;
 
-      // If we never moved off the start cell => treat as click-select step
       if (!dragStartedRef.current && start) {
         setModeBoth("click");
         applyStep(start.r, start.c);
       }
 
-      // If we were dragging => commit on release
       if (dragStartedRef.current) {
         commit();
       }
@@ -269,10 +272,8 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
       window.removeEventListener("pointerup", handleUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, boardWords]);
+  }, [grid, boardWords, disabled]);
 
-  // Click-outside to commit (only for click mode)
   useEffect(() => {
     const handleDocPointerDown = (e) => {
       if (modeRef.current !== "click") return;
@@ -288,10 +289,8 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     return () => {
       document.removeEventListener("pointerdown", handleDocPointerDown, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardWords]);
+  }, [boardWords, disabled]);
 
-  // Compute trail points whenever path changes (measure centers)
   useLayoutEffect(() => {
     const boardElement = boardRef.current;
     if (!boardElement) return;
@@ -322,7 +321,6 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
     );
   }
 
-  // Size cellRefs to match API board dimensions
   const rows = grid.length;
   const cols = grid[0]?.length ?? 0;
   if (
@@ -365,7 +363,7 @@ function Grid({ onCommitWord, onBoardReady, initialBoard = null, initialWords = 
                 {row.map((letter, c) => (
                   <td key={`${r}-${c}`}>
                     <div
-                      className={`circle ${isInPath(r, c) ? "selected" : ""}`}
+                      className={`circle ${isInPath(r, c) ? "selected" : ""} ${disabled ? "disabled" : ""}`}
                       data-cell="true"
                       data-r={r}
                       data-c={c}

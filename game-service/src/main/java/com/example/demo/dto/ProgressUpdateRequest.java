@@ -2,12 +2,12 @@ package com.example.demo.dto;
 
 import java.util.List;
 
-public class LiveProgressRequest {
+public class ProgressUpdateRequest {
     private Integer currentScore;
     private List<String> foundWords;
     private String playerRole;
 
-    public LiveProgressRequest() {
+    public ProgressUpdateRequest() {
     }
 
     public Integer getCurrentScore() {
