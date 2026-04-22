@@ -26,7 +26,7 @@ export default function MultiplayerLobby({
     setMessage("");
 
     try {
-      const { ok, data } = await createMultiplayerGame(timerSeconds, hostName || "Host");
+      const { ok, data } = await createMultiplayerGame(timerSeconds, user?.username || hostName || "Host");
       if (!ok) {
         setMessage(data.error || "Failed to create multiplayer game.");
         return;
@@ -63,7 +63,7 @@ export default function MultiplayerLobby({
     setMessage("");
 
     try {
-      const joinResp = await joinMultiplayerGame(joinCodeInput.trim(), guestName || "Guest");
+      const joinResp = await joinMultiplayerGame(joinCodeInput.trim(), user?.username || guestName || "Guest");
       if (!joinResp.ok) {
         setMessage(joinResp.data.error || "Failed to join game.");
         return;
@@ -128,6 +128,10 @@ export default function MultiplayerLobby({
         <div className="hintCard" style={{ minWidth: 360 }}>
           <div className="hintTitle">Create Multiplayer Game</div>
 
+          {user ? 
+          <>
+            Your username: {user.username}
+          </> : 
           <input
             type="text"
             placeholder="Your name"
@@ -135,6 +139,7 @@ export default function MultiplayerLobby({
             onChange={(e) => setHostName(e.target.value)}
             style={{ marginTop: 12, padding: 8, width: "100%" }}
           />
+          }
 
           <div style={{ marginTop: 12 }}>
             <label>Timer</label>
@@ -161,6 +166,10 @@ export default function MultiplayerLobby({
         <div className="hintCard" style={{ minWidth: 360 }}>
           <div className="hintTitle">Join Multiplayer Game</div>
 
+          {user ? 
+          <>
+            Your username: {user.username}
+          </> : 
           <input
             type="text"
             placeholder="Your name"
@@ -168,6 +177,7 @@ export default function MultiplayerLobby({
             onChange={(e) => setGuestName(e.target.value)}
             style={{ marginTop: 12, padding: 8, width: "100%" }}
           />
+          }
 
           <input
             type="text"
