@@ -11,6 +11,8 @@
   before_script:
     - python3 -m pip install --upgrade pip
     - pip install ruff
+    - pip install -r backend/requirements.txt
+    - pip install pytest-cov
 
 backend-lint:
   extends: .backend_base
@@ -18,3 +20,13 @@ backend-lint:
   script:
     - cd backend
     - ruff check .
+
+backend-test:
+  extends: .backend_base
+  stage: test
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  script:
+    - cd backend
+    - export DATABASE_URL="sqlite:///:memory:"
+    - export PYTHONPATH=.
+    - pytest tests/ -v --cov=. --cov-report=term-missing

@@ -12,3 +12,4 @@ workflow:
 
 stages:
   - lint
+  - test
