@@ -55,6 +55,10 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   const [submitted, setSubmitted] = useState(false);
   const [manualStatusMsg, setManualStatusMsg] = useState(null);
 
+  // ── Local countdown: derive from session on every render ──────────────────
+  const [, setTick] = useState(0);
+  const timeLeft = computeTimeLeft(session);
+
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
 
@@ -128,6 +132,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     [gameId, playerRole]
   );
 
+  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -143,6 +148,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     };
   }, [loadSession]);
 
+  // ── Poll server every 2 seconds for game state updates ───────────────────
   useEffect(() => {
     if (!gameId || session?.completed) return;
 
@@ -153,6 +159,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     return () => window.clearInterval(id);
   }, [gameId, session?.completed, loadSession]);
 
+  // ── WebSocket for real-time updates ──────────────────────────────────────
   useEffect(() => {
     if (!gameId) return;
 
@@ -200,6 +207,18 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     };
   }, [gameId, playerRole]);
 
+  // ── Local countdown: re-render every 1 second while active ───────────────
+  useEffect(() => {
+    if (!session || session.status !== "ACTIVE" || session.completed) return;
+
+    const id = window.setInterval(() => {
+      setTick((t) => t + 1);
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [session]);
+
+  // ── Auto-submit when time runs out ────────────────────────────────────────
   useEffect(() => {
     if (!session || session.completed) {
       if (session?.completed) {
@@ -302,6 +321,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
 
         <div className="playMain">
           <div className="playBoard">
+            {session.status === "ACTIVE" &&
             <Grid
               onCommitWord={handleCommitWord}
               onBoardReady={handleBoardReady}
@@ -310,7 +330,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
               skipFetch={true}
               disabled={session.status !== "ACTIVE" || submitted || session.completed}
               alreadyFoundWords={foundWords}
-            />
+            />}
           </div>
 
           <div className="playSidebar">
