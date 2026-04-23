@@ -19,6 +19,8 @@ import React, {
     initialBoard = null,
     initialWords = null,
     skipFetch = false,
+    disabled = false,
+    alreadyFoundWords = null,
   }) {
     const [grid, setGrid] = useState(null);
     const [boardWords, setBoardWords] = useState({});
@@ -41,6 +43,14 @@ import React, {
     useEffect(() => {
       onCommitWordRef.current = onCommitWord;
     }, [onCommitWord]);
+
+    useEffect(() => {
+      if (!skipFetch) return;
+
+      submittedWordsRef.current = new Set(
+        (alreadyFoundWords ?? []).map((word) => String(word).toUpperCase().trim())
+      );
+    }, [alreadyFoundWords, skipFetch]);
   
     const boardRef = useRef(null);
     const cellRefs = useRef([]);
@@ -275,6 +285,18 @@ const playSound = useCallback((audioRef, soundUrl) => {
   
       setModeBoth(null);
       setPointerPosBoth(null);
+
+      if (disabled) {
+        playInvalidWordSound();
+        setStatus("Waiting for game to start.");
+        setResultFlash({
+          type: "invalid",
+          label: "Waiting...",
+          anchor,
+        });
+        scheduleSelectionClear();
+        return;
+      }
   
       if (word.length < 3) {
         playInvalidWordSound();
@@ -327,6 +349,7 @@ const playSound = useCallback((audioRef, soundUrl) => {
       onCommitWordRef.current?.(word, points);
       scheduleSelectionClear();
     }, [
+      disabled,
       effectiveBoardWords,
       getCellCenter,
       getPathWord,
@@ -351,8 +374,6 @@ const playSound = useCallback((audioRef, soundUrl) => {
       let cancelled = false;
   
       if (skipFetch && initialBoard) {
-        resetSubmittedWords();
-  
         onBoardReadyRef.current?.({
           board: initialBoard,
           totalWords: Object.keys(normalizedInitialWords).length,
@@ -525,6 +546,11 @@ const playSound = useCallback((audioRef, soundUrl) => {
     const onCellPointerDown = useCallback(
       (r, c) => (e) => {
         e.preventDefault();
+
+        if (disabled) {
+          setStatus("Waiting for game to start.");
+          return;
+        }
   
         if (feedbackTimeoutRef.current) {
           clearFeedbackNow();
@@ -543,7 +569,7 @@ const playSound = useCallback((audioRef, soundUrl) => {
           });
         }
       },
-      [clearFeedbackNow, setPointerPosBoth]
+      [clearFeedbackNow, disabled, setPointerPosBoth]
     );
   
     const word = getPathWord(path);
