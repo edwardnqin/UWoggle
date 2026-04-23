@@ -7,6 +7,7 @@ import {
   submitMultiplayerScore,
   updateMultiplayerProgress,
 } from "../services/api";
+import useBoardMusic from "../hooks/useBoardMusic";
 
 function formatTime(totalSeconds) {
   const safeSeconds = Math.max(0, totalSeconds ?? 0);
@@ -60,6 +61,9 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
 
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
+
+  const isGameActive = Boolean(session) && !submitted && !session.completed;
+  const { playForBoard } = useBoardMusic({ shouldKeepLooping: isGameActive });
 
   const loadSession = useCallback(async () => {
     if (!gameId) return;
@@ -260,6 +264,13 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
     [session, submitted, foundWords, score, handleLiveProgress]
   );
 
+  const handleBoardReady = useCallback(
+    ({ board: nextBoard }) => {
+      playForBoard(nextBoard);
+    },
+    [playForBoard]
+  );
+
   const statusMsg = useMemo(() => {
     if (manualStatusMsg) return manualStatusMsg;
     if (!session) return "Loading multiplayer game...";
@@ -312,6 +323,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
             {session.status === "ACTIVE" &&
             <Grid
               onCommitWord={handleCommitWord}
+              onBoardReady={handleBoardReady}
               initialBoard={session.board}
               initialWords={session.words}
               skipFetch={true}
