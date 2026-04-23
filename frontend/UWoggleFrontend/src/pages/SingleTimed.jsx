@@ -2,6 +2,7 @@ import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
+import useBoardMusic from "../hooks/useBoardMusic";
 
 function formatTime(totalSeconds) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -23,6 +24,8 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
   const [boardWordCount, setBoardWordCount] = useState(0);
   const finishedRef = useRef(false);
   const maxScore = useRef(0);
+  const isGameActive = timeLeft > 0 && (boardWordCount === 0 || foundWords.length < boardWordCount);
+  const { playForBoard } = useBoardMusic({ shouldKeepLooping: isGameActive });
 
   useEffect(() => {
     if (finishedRef.current) return undefined;
@@ -81,7 +84,8 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
   const handleBoardReady = useCallback(({ board: nextBoard, totalWords }) => {
     setBoard(nextBoard);
     setBoardWordCount(totalWords);
-  }, []);
+    playForBoard(nextBoard);
+  }, [playForBoard]);
 
     function handleMaxScore (value) {
       maxScore.current = value;

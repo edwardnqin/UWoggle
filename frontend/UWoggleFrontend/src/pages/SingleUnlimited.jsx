@@ -2,6 +2,7 @@ import Grid from "../components/ui/Grid";
 import HudButton from "../components/ui/HudButton";
 import { useCallback, useState, useRef } from "react";
 import ScoringRuleLegend from "../components/ui/ScoringRuleLegend";
+import useBoardMusic from "../hooks/useBoardMusic";
 
 export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
@@ -9,6 +10,7 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [board, setBoard] = useState([]);
 
   const maxScore = useRef(0);
+  const { playForBoard } = useBoardMusic({ shouldKeepLooping: true });
 
   const handleCommitWord = useCallback((word, points) => {
     setScore((currentScore) => currentScore + points);
@@ -17,7 +19,8 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
 
   const handleBoardReady = useCallback(({ board: nextBoard }) => {
     setBoard(nextBoard);
-  }, []);
+    playForBoard(nextBoard);
+  }, [playForBoard]);
 
   function handleMaxScore (value) {
     maxScore.current = value;
