@@ -51,7 +51,6 @@ class TestAreAcceptedFriendsUsedInCreate:
         assert "join" in msg.lower()
 
     def test_create_inserts_when_friends(self):
-        import pymysql
         from services.game_invite_service import create_invite
 
         conn, cur = make_conn()
