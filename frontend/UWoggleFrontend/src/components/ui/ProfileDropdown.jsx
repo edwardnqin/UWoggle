@@ -1,6 +1,7 @@
 /**
  * Profile avatar → sidebar: Friends (add by username, list), Requests (in/out + accept/decline),
- * Invites placeholder. Data from /api/friends/*; syncs when sidebar opens.
+ * Invites placeholder. Data from /api/friends/*; friends list loads when sidebar opens; incoming
+ * request count polls for badge + stays fresh on focus/visibility.
  */
 import { useCallback, useEffect, useState } from "react";
 
@@ -13,6 +14,7 @@ import {
 } from "../../services/api";
 
 const CLOSE_ANIMATION_MS = 0;
+const REQUEST_POLL_MS = 20_000;
 
 export default function ProfileDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
@@ -75,8 +77,37 @@ export default function ProfileDropdown({ user, onLogout }) {
   useEffect(() => {
     if (!open || userId == null) return;
     loadFriends();
-    loadRequests();
-  }, [open, userId, loadFriends, loadRequests]);
+  }, [open, userId, loadFriends]);
+
+  useEffect(() => {
+    if (userId == null) return undefined;
+
+    void loadRequests();
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
+      void loadRequests();
+    }, REQUEST_POLL_MS);
+
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        void loadRequests();
+      }
+    }
+
+    function onWindowFocus() {
+      void loadRequests();
+    }
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onWindowFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onWindowFocus);
+    };
+  }, [userId, loadRequests]);
 
   function closeSidebar() {
     setIsClosing(true);
@@ -177,6 +208,9 @@ export default function ProfileDropdown({ user, onLogout }) {
 
   const username = user?.username || user?.email || "User";
   const displayUserId = userId ?? "—";
+
+  const incomingCount = requestsData.incoming.length;
+  const incomingBadgeText = incomingCount > 99 ? "99+" : String(incomingCount);
 
   function renderContent() {
     if (activeView === "friends") {
@@ -320,7 +354,11 @@ export default function ProfileDropdown({ user, onLogout }) {
           onClick={openSidebar}
           aria-expanded={open}
           aria-haspopup="dialog"
-          aria-label="Open profile sidebar"
+          aria-label={
+            incomingCount > 0
+              ? `Open profile sidebar, ${incomingCount} pending friend request${incomingCount === 1 ? "" : "s"}`
+              : "Open profile sidebar"
+          }
         >
           <svg
             className="profileDropdown__icon"
@@ -330,10 +368,16 @@ export default function ProfileDropdown({ user, onLogout }) {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden
           >
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
           </svg>
+          {incomingCount > 0 && (
+            <span className="profileDropdown__badge" aria-hidden>
+              {incomingBadgeText}
+            </span>
+          )}
         </button>
       </div>
 
@@ -381,10 +425,15 @@ export default function ProfileDropdown({ user, onLogout }) {
 
               <button
                 type="button"
-                className={`friendSidebar__tab ${activeView === "requests" ? "friendSidebar__tab--active" : ""}`}
+                className={`friendSidebar__tab friendSidebar__tab--row ${activeView === "requests" ? "friendSidebar__tab--active" : ""}`}
                 onClick={() => setActiveView("requests")}
               >
-                Requests
+                <span>Requests</span>
+                {incomingCount > 0 && (
+                  <span className="friendSidebar__tabBadge" aria-hidden>
+                    {incomingBadgeText}
+                  </span>
+                )}
               </button>
 
               <button
