@@ -13,6 +13,7 @@ export default function Home({
   onSignup,
   onFeedback,
   onLogout,
+  onEnterMultiplayerGame,
   user,
 }) {
   const [singleplayerIsHovered, setSingleplayerIsHovered] = useState(false);
@@ -29,7 +30,11 @@ export default function Home({
 
         <div className="rightBtns animRight delay2">
           {user ? (
-            <ProfileDropdown user={user} onLogout={onLogout} />
+            <ProfileDropdown
+              user={user}
+              onLogout={onLogout}
+              onEnterMultiplayerGame={onEnterMultiplayerGame}
+            />
           ) : (
             <>
               <HudButton variant="mini" onClick={onLogin} ariaLabel="Open login">
