@@ -94,7 +94,6 @@
     padding: 18px 18px 10px;
     box-shadow: 0 22px 44px rgba(0,0,0,.22);
     backdrop-filter: blur(6px);
-    margin-top: 18px;
     text-align:left;
   }
   .hintTitle{ color: rgba(255,255,255,.96); font-weight: 950; margin-bottom: 8px; }
@@ -106,6 +105,13 @@
     margin-top: 14px;
   }
   .hintList{ margin: 0; padding-left: 18px; color: rgba(255,255,255,.9); font-weight: 650; line-height: 1.55; }
+
+  /* CSS for multiplayer game mode. This is used with hintCard above */
+  .multiplayerGameScoreBox {
+    display: flex;
+    color: white;
+    font-size: 20px;
+  }
 
   .topRow{
     display:flex;

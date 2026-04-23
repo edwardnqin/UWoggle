@@ -247,6 +247,7 @@ public class GameSessionService {
         response.put("boardLayout", gameSession.getBoardLayout());
         response.put("board", board);
         response.put("words", words);
+        response.put("totalWordCount", words.size());
         response.put("maxScore", gameSession.getMaxScore());
         response.put("hostScore", gameSession.getHostScore());
         response.put("guestScore", gameSession.getGuestScore());

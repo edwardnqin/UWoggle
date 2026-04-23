@@ -333,6 +333,17 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
           </div>
 
           <div className="playSidebar">
+            <div className="hintCard multiplayerGameScoreBox">  *
+              <div className="hintCard">
+                <strong>Your Score:</strong> {score}
+              </div>
+              <div className="hintCard">
+                {playerRole === "HOST" ?
+                  <><strong>Opponent's Score:</strong> {session.guestScore ?? 0}</> :
+                  <><strong>Opponent's Score:</strong> {session.hostScore ?? 0}</>
+                }
+              </div>
+            </div>
             <div className="hintCard scoreboardPanel">
               <div className="hintTitle">Game Stats</div>
               <ul className="hintList statsList">
@@ -341,17 +352,13 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
                 <li><strong>Game ID:</strong> {session.gameId}</li>
                 <li><strong>Join Code:</strong> {session.joinCode}</li>
                 <li><strong>Time Left:</strong> {formatTime(timeLeft ?? session.timerSeconds ?? 0)}</li>
-                <li><strong>Your Score:</strong> {score}</li>
-                <li><strong>Your Words:</strong> {foundWords.length}</li>
-                <li><strong>Host Score:</strong> {session.hostScore ?? 0}</li>
-                <li><strong>Guest Score:</strong> {session.guestScore ?? 0}</li>
                 <li><strong>Host Submitted:</strong> {session.hostSubmitted ? "Yes" : "No"}</li>
                 <li><strong>Guest Submitted:</strong> {session.guestSubmitted ? "Yes" : "No"}</li>
               </ul>
             </div>
 
             <div className="hintCard foundWordsPanel">
-              <div className="hintTitle">Found Words ({foundWords.length})</div>
+              <div className="hintTitle">Found Words ({foundWords.length} / {session?.totalWordCount})</div>
               {foundWords.length === 0 ? (
                 <div className="pageSubtitle">No words yet.</div>
               ) : (
