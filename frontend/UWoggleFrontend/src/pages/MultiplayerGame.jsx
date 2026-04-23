@@ -62,7 +62,6 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
   const wsRef = useRef(null);
   const autoSubmittedRef = useRef(false);
 
-  const timeLeft = useMemo(() => computeTimeLeft(session), [session]);
   const isGameActive = Boolean(session) && !submitted && !session.completed;
   const { playForBoard } = useBoardMusic({ shouldKeepLooping: isGameActive });
 
