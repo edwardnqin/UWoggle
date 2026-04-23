@@ -1,5 +1,7 @@
 import { useState } from "react";
 import HudButton from "../components/ui/HudButton";
+import MultiplayerTimerSelect from "../components/multiplayer/MultiplayerTimerSelect";
+import { DEFAULT_MULTIPLAYER_TIMER_SECONDS } from "../components/multiplayer/multiplayerTimerOptions";
 import {
   createMultiplayerGame,
   joinMultiplayerGame,
@@ -13,7 +15,7 @@ export default function MultiplayerLobby({
   onOpenSignup,
   user,
 }) {
-  const [timerSeconds, setTimerSeconds] = useState(180);
+  const [timerSeconds, setTimerSeconds] = useState(DEFAULT_MULTIPLAYER_TIMER_SECONDS);
   const [hostName, setHostName] = useState("");
   const [guestName, setGuestName] = useState("");
   const [joinCodeInput, setJoinCodeInput] = useState("");
@@ -141,20 +143,11 @@ export default function MultiplayerLobby({
           />
           }
 
-          <div style={{ marginTop: 12 }}>
-            <label>Timer</label>
-            <select
-              value={timerSeconds}
-              onChange={(e) => setTimerSeconds(Number(e.target.value))}
-              style={{ display: "block", marginTop: 8, padding: 8, width: "100%" }}
-            >
-              <option value={15}>15 seconds (test)</option>
-              <option value={180}>3 minutes</option>
-              <option value={300}>5 minutes</option>
-              <option value={600}>10 minutes</option>
-              <option value={900}>15 minutes</option>
-            </select>
-          </div>
+          <MultiplayerTimerSelect
+            value={timerSeconds}
+            onChange={setTimerSeconds}
+            id="lobby-multiplayer-timer"
+          />
 
           <div style={{ marginTop: 16 }}>
             <HudButton onClick={handleCreateGame}>

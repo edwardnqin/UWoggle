@@ -111,6 +111,29 @@ export async function removeFriend(friendId) {
   });
 }
 
+export async function createGameInvite(inviteeUserId, gameId, joinCode) {
+  return request("/game-invites", {
+    method: "POST",
+    body: JSON.stringify({
+      invitee_user_id: inviteeUserId,
+      game_id: gameId,
+      join_code: joinCode,
+    }),
+  });
+}
+
+export async function fetchGameInvitesIncoming() {
+  return request("/game-invites/incoming", { method: "GET" });
+}
+
+export async function declineGameInvite(inviteId) {
+  return request(`/game-invites/${inviteId}/decline`, { method: "POST" });
+}
+
+export async function acknowledgeGameInviteJoined(inviteId) {
+  return request(`/game-invites/${inviteId}/acknowledge`, { method: "POST" });
+}
+
 // ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------

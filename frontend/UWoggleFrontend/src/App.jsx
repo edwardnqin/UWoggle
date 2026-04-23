@@ -429,6 +429,7 @@ export default function App() {
             onLogin={() => setLoginOpen(true)}
             onSignup={() => setSignupOpen(true)}
             onLogout={handleLogout}
+            onEnterMultiplayerGame={enterMultiplayerGame}
             onFeedback={() => {
               setFbStatus(null);
               setFeedbackOpen(true);
