@@ -24,7 +24,9 @@ backend-lint:
 backend-test:
   extends: .backend_base
   stage: test
+  coverage: '/TOTAL.*\s+(\d+%)$/'
   script:
     - cd backend
-    - DATABASE_URL=sqlite:///:memory: PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=term-missing
-  coverage: '/TOTAL.*\s+(\d+%)$/'
+    - export DATABASE_URL="sqlite:///:memory:"
+    - export PYTHONPATH=.
+    - pytest tests/ -v --cov=. --cov-report=term-missing
