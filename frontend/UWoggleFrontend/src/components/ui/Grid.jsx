@@ -28,6 +28,8 @@ import React, {
   
     const submittedWordsRef = useRef(new Set());
   
+    // Create refs here for the setter functions to prevent 'Stale Closure' - functions using outdated data
+    // Consider https://interviewremedy.com/interview-questions/react/what-are-stale-closures-in-react-596
     const onBoardReadyRef = useRef(onBoardReady);
     const onSetMaxScoreRef = useRef(onSetMaxScore);
     const onCommitWordRef = useRef(onCommitWord);
@@ -384,6 +386,11 @@ const playSound = useCallback((audioRef, soundUrl) => {
         };
       }
   
+      // obtain all necessary information from backend about board such as:
+        // mapping of words to scored points
+        // the actual board
+        // max possible score of the board
+        // total words possible of the board
       getBoard().then((res) => {
         if (cancelled) return;
   

@@ -333,7 +333,7 @@ export default function MultiplayerGame({ gameId, playerRole, onBackToHome }) {
           </div>
 
           <div className="playSidebar">
-            <div className="hintCard multiplayerGameScoreBox">  *
+            <div className="hintCard multiplayerGameScoreBox">
               <div className="hintCard">
                 <strong>Your Score:</strong> {score}
               </div>

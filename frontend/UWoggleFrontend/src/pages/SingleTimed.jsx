@@ -87,9 +87,9 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
     playForBoard(nextBoard);
   }, [playForBoard]);
 
-    function handleMaxScore (value) {
-      maxScore.current = value;
-    }
+  function handleMaxScore (value) {
+    maxScore.current = value;
+  }
 
   const handleGiveUp = () => {
     if (finishedRef.current) return;
@@ -141,7 +141,7 @@ export default function SingleTimed({ timerDuration, title, subtitle, onGiveUp, 
             </div>
 
             <div className="hintCard foundWordsPanel">
-              <div className="hintTitle">Found Words ({foundWords.length})</div>
+              <div className="hintTitle">Found Words ({foundWords.length} / {boardWordCount})</div>
               {foundWords.length === 0 ? (
                 <div className="pageSubtitle">No words yet.</div>
               ) : (
