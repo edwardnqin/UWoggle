@@ -53,6 +53,7 @@
     grid-template-columns: 1fr 1.2fr 1fr;
     gap: clamp(14px, 2vw, 22px);
     align-items:center;
+    align-items: start;
     width: min(980px, 100%);
     align-self:center;
   }
@@ -62,7 +63,7 @@
   .topBar{ display:flex; align-items:center; justify-content:space-between; }
 
   .centerStack{
-    flex:1;
+    flex-shrink:1;
     display:flex;
     align-items:center;
     justify-content:center;

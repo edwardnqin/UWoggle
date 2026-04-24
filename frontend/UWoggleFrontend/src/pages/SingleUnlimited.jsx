@@ -8,6 +8,7 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
   const [foundWords, setFoundWords] = useState([]);
   const [score, setScore] = useState(0);
   const [board, setBoard] = useState([]);
+  const [boardWordCount, setBoardWordCount] = useState(0);
 
   const maxScore = useRef(0);
   const { playForBoard } = useBoardMusic({ shouldKeepLooping: true });
@@ -17,8 +18,9 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
     setFoundWords((prev) => [...prev, word]);
   }, []);
 
-  const handleBoardReady = useCallback(({ board: nextBoard }) => {
+  const handleBoardReady = useCallback(({ board: nextBoard, totalWords }) => {
     setBoard(nextBoard);
+    setBoardWordCount(totalWords);
     playForBoard(nextBoard);
   }, [playForBoard]);
 
@@ -60,7 +62,7 @@ export default function SingleUnlimited({ title, subtitle, onGiveUp }) {
             </div>
 
             <div className="hintCard foundWordsPanel">
-              <div className="hintTitle">Found Words ({foundWords.length})</div>
+              <div className="hintTitle">Found Words ({foundWords.length} / {boardWordCount})</div>
               {foundWords.length === 0 ? (
                 <div className="pageSubtitle">No words yet.</div>
               ) : (
