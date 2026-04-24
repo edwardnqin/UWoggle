@@ -4,15 +4,15 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE:      uwoggle
-      MYSQL_USER:          ${MYSQL_USER}
-      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: uwoggle
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/01_init.sql
-      - ./seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      # - ./seed.sql:/docker-entrypoint-initdb.d/02_seed.sql # db testing purposes
 
 volumes:
   mysql_data:
